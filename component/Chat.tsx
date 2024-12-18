@@ -1,6 +1,7 @@
 import {useWallet} from "@/hooks/useWallet";
 import React from "react";
 import Wallet from "./Wallet";
+import { useBalance } from "@/hooks/useBalance";
 
 const Chat = () => {
   const {
@@ -10,12 +11,15 @@ const Chat = () => {
     toggleKeyVisibility,
     logout
   } = useWallet();
+  const {balance}= useBalance();
 
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white">
       <h1 className="text-4xl font-bold mb-4">Welcome to Your Dashboard</h1>
       <p className="text-lg mb-4">Your Public Key: {pubKey}</p>
+      <p>{balance}</p>
+      
       {showKey && <p className="text-lg mb-4">Your Private Key: {secKey}</p>}
       {showKey ? (
         <button

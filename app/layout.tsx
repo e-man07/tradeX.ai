@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { WalletProvider } from "@/hooks/useWallet";
 import { ThemeProvider } from "@/component/theme-provider";
+import { BalanceProvider } from "@/hooks/useBalance";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,6 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <WalletProvider>
+
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
@@ -39,6 +41,15 @@ export default function RootLayout({
             {children}
           </ThemeProvider>
         </body>
+
+        <BalanceProvider>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        {children}
+      </body>
+      </BalanceProvider>
+
       </WalletProvider>
     </html>
   );
