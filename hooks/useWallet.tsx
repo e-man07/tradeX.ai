@@ -9,6 +9,7 @@ interface WalletContextProps {
   pubKey: string;
   secKey: string;
   isAuthenticated: boolean;
+  setIsAuthenticated: (isAuthenticated: boolean) => void;
   walletExists: boolean;
   showKey: boolean;
   createWallet: (password: string) => { pubKey: string; secKey: string };
@@ -52,9 +53,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({
     setPubKey(keypair.publicKey.toString());
     setSecKey(secretKey);
     setWalletExists(true);
-    setIsAuthenticated(true);
     setKeyPair(keypair);
-    console.log("keypair-> ", keypair.publicKey.toString())
+    console.log("keypair-> ", keypair.publicKey.toString());
     console.log("pubKey ->", pubKey);
     console.log("secKey ->", secKey);
     return { pubKey: keypair.publicKey.toString(), secKey: secretKey };
@@ -108,6 +108,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({
   return (
     <WalletContext.Provider
       value={{
+        setIsAuthenticated,
         pubKey,
         secKey,
         isAuthenticated,

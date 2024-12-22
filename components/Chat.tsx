@@ -75,6 +75,12 @@ export default function Chat() {
       setMessages((prev) => [...prev, errorMessage]);
     }
   };
+
+  const sendPrompt = async (prompt: string) => {
+    const response = await fetch("/api/generate", {
+        
+    })
+  }
     
   return (
     <SidebarProvider>

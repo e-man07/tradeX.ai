@@ -14,7 +14,8 @@ export default function TempLogin() {
   const [password, setPassword] = useState("");
   const toggleMode = () => setSign(!sign);
 
-  const { createWallet, importWallet } = useWallet();
+  const { createWallet, importWallet, setIsAuthenticated, isAuthenticated } =
+    useWallet();
 
   //register function
   const register = async (email: string, password: string) => {
@@ -37,9 +38,12 @@ export default function TempLogin() {
       throw new Error("User already exists");
     } else if (response.status === 500) {
       throw new Error("Server not running!");
-    } else {
-      localStorage.setItem("token", response.data.token);
     }
+
+    console.log("response ->", response.data);
+    // localStorage.setItem("token", response.data.token);
+    setIsAuthenticated(true);
+    console.log("isAuthenticated", isAuthenticated);
   };
 
   // login functionality
