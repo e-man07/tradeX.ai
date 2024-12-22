@@ -3,7 +3,10 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { WalletProvider } from "@/hooks/useWallet";
 import { ThemeProvider } from "@/components/theme-provider";
+import { BalanceProvider } from "@/hooks/useBalance";
+import { AgentProvider } from "@/hooks/useSolanaAgent";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,20 +29,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        suppressHydrationWarning
       >
         <WalletProvider>
-         {/* <SidebarProvider> */}
-          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-            <main className={`${geistSans.className}`}>
-            {/* <SidebarTrigger /> */}
-              {children}
-            </main>
-          </ThemeProvider>
-         {/* </SidebarProvider> */}
+          <BalanceProvider>
+            <AgentProvider>
+              <ThemeProvider
+                attribute="class"
+                defaultTheme="dark"
+                enableSystem
+                disableTransitionOnChange
+              >
+                {children}
+              </ThemeProvider>
+            </AgentProvider>
+          </BalanceProvider>
         </WalletProvider>
       </body>
     </html>

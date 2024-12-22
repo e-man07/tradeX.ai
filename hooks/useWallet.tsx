@@ -16,6 +16,7 @@ interface WalletContextProps {
   authenticate:(password:string)=>void;
   logout: () => void;
   toggleKeyVisibility: () => void;
+  keyPair:Keypair  | undefined;
 }
 
 const WalletContext = createContext<WalletContextProps | null>(null);
@@ -23,6 +24,7 @@ const WalletContext = createContext<WalletContextProps | null>(null);
 export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [pubKey, setPubKey] = useState<string>("");
   const [secKey, setSecKey] = useState<string>("");
+  const [keyPair, setKeyPair] = useState<Keypair | undefined>();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [walletExists, setWalletExists] = useState<boolean>(false);
   const [showKey, setShowKey] = useState<boolean>(false);
@@ -37,12 +39,13 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const keypair = Keypair.generate();
     const secretKey = bs58.encode(keypair.secretKey);
     const encryptedKeypair = CryptoJS.AES.encrypt(secretKey, password).toString();
-
+    
     localStorage.setItem("encryptedKeypair", encryptedKeypair);
     setPubKey(keypair.publicKey.toString());
     setSecKey(secretKey);
     setWalletExists(true);
     setIsAuthenticated(true);
+    setKeyPair(keypair);
     return pubKey;
   };
 
@@ -50,12 +53,13 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (!secretKey || !password) throw new Error("Both secret key and password are required!");
     const keypair = Keypair.fromSecretKey(bs58.decode(secretKey));
     const encryptedKeypair = CryptoJS.AES.encrypt(secretKey, password).toString();
-
+    
     localStorage.setItem("encryptedKeypair", encryptedKeypair);
     setPubKey(keypair.publicKey.toString());
     setSecKey(secretKey);
     setWalletExists(true);
     setIsAuthenticated(true);
+    setKeyPair(keypair);
   };
 
   const authenticate = (password: string) => {
@@ -68,6 +72,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setPubKey(keypair.publicKey.toString());
     setSecKey(decryptedKey);
     setIsAuthenticated(true);
+    setKeyPair(keypair)
   };
 
   const logout = () => {
@@ -93,6 +98,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         authenticate,
         logout,
         toggleKeyVisibility,
+        keyPair,
       }}
     >
       {children}

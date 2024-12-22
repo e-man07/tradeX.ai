@@ -2,14 +2,12 @@
 
 import {useWallet} from '@/hooks/useWallet';
 import React, { useState } from 'react'
-import Chat from './Chat';
-
 const Wallet = () => {
   const [password,setPassword]=useState("");
   const [secretInput, setSecretInput]= useState("");
     const {
-        pubKey,
         walletExists,
+        pubKey,
         isAuthenticated,
         createWallet,
         importWallet,

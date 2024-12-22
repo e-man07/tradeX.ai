@@ -1,3 +1,9 @@
+"use client";
+
+import { useWallet } from "@/hooks/useWallet";
+import React, { useState } from "react";
+import { useBalance } from "@/hooks/useBalance";
+import { useSolanaAgent } from "@/hooks/useSolanaAgent";
 import { AppSidebar } from "@/components/app-sidebar"
 import {
   Breadcrumb,
@@ -16,7 +22,60 @@ import {
 import ChatArea from "./chat-area"
 import { ArrowUp, ArrowUpRight } from "lucide-react"
 
+
+interface Message {
+  id: number;
+  sender: "user" | "system";
+  content: string;
+}
+
 export default function Chat() {
+    
+  const { pubKey, secKey, showKey, toggleKeyVisibility, logout } = useWallet();
+  const { balance, tokens, listenForChanges, totalBalance } = useBalance();
+  const { processTransfer, processSwap,processPumpFunToken } = useSolanaAgent();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputValue, setInputValue] = useState<string>("");
+
+  const handleSendMessage = async () => {
+    if (!inputValue.trim()) return;
+
+    // Add user's message to the chat
+    const userMessage: Message = {
+      id: Date.now(),
+      sender: "user",
+      content: inputValue,
+    };
+    setMessages((prev) => [...prev, userMessage]);
+
+    // Clear the input field
+    setInputValue("");
+
+    try {
+      
+      const data = {
+        from: "SOL",
+        to: "USDC",
+        amount: "0.0001",
+      };
+      const signature = await processSwap(data);
+
+      const systemMessage: Message = {
+        id: Date.now(),
+        sender: "system",
+        content: `Swap successful! Transaction signature: ${signature}`,
+      };
+      setMessages((prev) => [...prev, systemMessage]);
+    } catch (error: any) {
+      const errorMessage: Message = {
+        id: Date.now(),
+        sender: "system",
+        content: `Error: ${error.message}`,
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    }
+  };
+    
   return (
     <SidebarProvider>
       <AppSidebar />
