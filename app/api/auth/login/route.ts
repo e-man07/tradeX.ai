@@ -1,23 +1,23 @@
-import type { NextApiRequest, NextApiResponse } from "next";
+import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
+import NCrypt from "ncrypt-js";
 
 const prisma = new PrismaClient();
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || "your_strong_encryption_key";
+const ncrypt = new NCrypt(ENCRYPTION_KEY);
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method not allowed" });
-  }
-
-  const { email, password } = req.body;
-
+export async function POST(request: NextRequest) {
   try {
+    // Parse the request body
+    const { email, password } = await request.json();
+
     // Validate input
     if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required" });
+      return NextResponse.json(
+        { message: "Email and password are required" },
+        { status: 400 }
+      );
     }
 
     // Find user by email
@@ -26,24 +26,39 @@ export default async function handler(
     });
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return NextResponse.json(
+        { message: "User not found" },
+        { status: 404 }
+      );
     }
 
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      return res.status(401).json({ message: "Invalid email or password" });
+      return NextResponse.json(
+        { message: "Invalid email or password" },
+        { status: 401 }
+      );
     }
 
-    // Send pubKey and hashedPrivateKey
-    return res.status(200).json({
-      message: "Login successful",
-      pubKey: user.pubKey,
-      hashedPrivateKey: user.secretKey,
-    });
+    // Decrypt the secretKey
+    const decryptedSecretKey = ncrypt.decrypt(user.secretKey);
+
+    // Send pubKey and decrypted secretKey
+    return NextResponse.json(
+      {
+        message: "Login successful",
+        pubKey: user.pubKey,
+        secretKey: decryptedSecretKey,
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error during login:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

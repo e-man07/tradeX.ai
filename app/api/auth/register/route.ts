@@ -1,25 +1,25 @@
-import type { NextApiRequest, NextApiResponse } from "next";
+import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import NCrypt from "ncrypt-js";
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || "your_strong_encryption_key";
+const ncrypt = new NCrypt(ENCRYPTION_KEY);
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method not allowed" });
-  }
-
-  const { email, password, pubKey, secretKey } = req.body;
-
+export async function POST(request: NextRequest) {
   try {
+    // Parse the request body
+    const { email, password, pubKey, secretKey } = await request.json();
+
     // Validate input
     if (!email || !password || !pubKey || !secretKey) {
-      return res.status(400).json({ message: "All fields are required" });
+      return NextResponse.json(
+        { message: "All fields are required" },
+        { status: 400 }
+      );
     }
 
     // Check if user already exists
@@ -28,14 +28,17 @@ export default async function handler(
     });
 
     if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
+      return NextResponse.json(
+        { message: "User already exists" },
+        { status: 400 }
+      );
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // hash the private key of the user 
-    const hashedPrivateKey = await bcrypt.hash(secretKey, 10);
+    // Encrypt the private key of the user using NCrypt
+    const encryptedSecretKey = ncrypt.encrypt(secretKey);
 
     // Create user
     const user = await prisma.user.create({
@@ -43,7 +46,7 @@ export default async function handler(
         email,
         password: hashedPassword,
         pubKey,
-        secretKey: hashedPrivateKey,
+        secretKey: encryptedSecretKey, // Store encrypted secret key
       },
     });
 
@@ -52,12 +55,18 @@ export default async function handler(
       expiresIn: "1h",
     });
 
-    return res.status(201).json({
-      message: "User registered successfully",
-      token,
-    });
+    return NextResponse.json(
+      {
+        message: "User registered successfully",
+        token,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Error during registration:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return NextResponse.json(
+      { message: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
