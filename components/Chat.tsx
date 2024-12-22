@@ -75,7 +75,8 @@ export default function Chat() {
       setMessages((prev) => [...prev, errorMessage]);
     }
   };
-
+ 
+  //TODO: to complete this function and send the prompt to the route 
   const sendPrompt = async (prompt: string) => {
     const response = await fetch("/api/generate", {
         
