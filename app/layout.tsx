@@ -4,6 +4,7 @@ import "./globals.css";
 import { WalletProvider } from "@/hooks/useWallet";
 import { ThemeProvider } from "@/components/theme-provider";
 import { BalanceProvider } from "@/hooks/useBalance";
+import { AgentProvider } from "@/hooks/useSolanaAgent";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,30 +28,24 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <WalletProvider>
-
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="dark"
-            enableSystem
-            disableTransitionOnChange
-          >
-            {children}
-          </ThemeProvider>
-        </body>
-
-        <BalanceProvider>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <WalletProvider>
+          <BalanceProvider>
+            <AgentProvider>
+              <ThemeProvider
+                attribute="class"
+                defaultTheme="dark"
+                enableSystem
+                disableTransitionOnChange
+              >
+                {children}
+              </ThemeProvider>
+            </AgentProvider>
+          </BalanceProvider>
+        </WalletProvider>
       </body>
-      </BalanceProvider>
-
-      </WalletProvider>
     </html>
   );
 }

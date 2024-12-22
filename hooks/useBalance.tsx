@@ -1,29 +1,37 @@
 "use client";
 
 import {
-  clusterApiUrl,
   Connection,
   LAMPORTS_PER_SOL,
+  ParsedAccountData,
   PublicKey,
 } from "@solana/web3.js";
 import { createContext, useContext, useEffect, useState } from "react";
 import { useWallet } from "./useWallet";
-import {
-  AccountLayout,
-  getTokenMetadata,
-  TOKEN_2022_PROGRAM_ID,
-} from "@solana/spl-token";
+
+import { programs } from "@metaplex/js";
+
+const {
+  metadata: { Metadata, MetadataData },
+} = programs;
+import { AccountLayout, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID} from "@solana/spl-token";
 
 interface BalanceContextProps {
-  balance: number;
+  balance: string;
   tokens: {
     address: string;
-    amount: string;
+    mint:string;
+    decimal:string;
+    amount: number;
     symbol: string;
     name: string;
     uri: string | null;
+    price:number;
   }[];
+  fetchAllTokens: () => void;
+  listenForChanges:()=>void;
   tokenFetchError: string;
+  totalBalance:number;
 }
 
 const BalanceContext = createContext<BalanceContextProps | null>(null);
@@ -32,114 +40,161 @@ export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const connection = new Connection(
-    "https://api.devnet.solana.com",
+    "https://mainnet.helius-rpc.com/?api-key=ddb0234e-0765-42fa-88e8-41825d43dbdd",
     "confirmed"
   );
   const { pubKey, isAuthenticated, walletExists } = useWallet();
-  const [balance, setBalance] = useState<number>(0);
+  const [balance, setBalance] = useState<string>("");
   const [tokenFetchError, setTokenFetchError] = useState<string>("");
   const [tokens, setTokens] = useState<
     {
       address: string;
-      amount: string;
+      mint:string;
+      decimal:string;
+      amount: number;
       symbol: string;
       name: string;
       uri: string | null;
+      price:number;
     }[]
   >([]);
+  const [totalBalance, setTotalBalance] = useState<number>(0);
 
-  //Get Balance in Sol
+  // Get Balance in Sol
   const getBalance = async () => {
     try {
       const publicKey = new PublicKey(pubKey);
-      const bal = await connection.getBalance(publicKey);
-      setBalance(bal / LAMPORTS_PER_SOL);
+      const lamports = await connection.getBalance(publicKey);
+      const solBalance = lamports / LAMPORTS_PER_SOL;
+      const response = await fetch(
+        "https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112"
+      );
+      const priceData = await response.json();
+      const solPrice =
+        priceData.data?.So11111111111111111111111111111111111111112?.price
+      const solValueInUSD = solBalance*solPrice
+      setTotalBalance((prev)=>prev+solValueInUSD);
+      const bal = `${solBalance.toFixed(2)} SOL ($ ${solValueInUSD.toFixed(3)})`
+      
+
+      setBalance(bal);
+      connection.onAccountChange(publicKey, async (accountInfo) => {
+        setTotalBalance(0);
+        const lamports = accountInfo.lamports || 0;
+        const updatedSolBalance = lamports / LAMPORTS_PER_SOL;
+        const response = await fetch(
+          "https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112"
+        );
+        const priceData = await response.json();
+        const updateSolPrice =
+          priceData.data?.So11111111111111111111111111111111111111112?.price;
+        const updatedSolValueInUSD = (updateSolPrice * updatedSolBalance);
+        setTotalBalance((prev)=>prev+updatedSolValueInUSD);
+        const updatedBal = `${updatedSolBalance.toFixed(2)} SOL ($ ${updatedSolValueInUSD.toFixed(2)})`
+
+        setBalance(updatedBal);
+      });
     } catch (error) {
       console.error("Error fetching balance:", error);
-      return null;
     }
   };
 
-  //fetch mint addresses
-  const fetchAllToken = async () => {
-    try {
-      const tokenAccounts = await connection.getTokenAccountsByOwner(
-        new PublicKey(pubKey),
-        {
-          programId: TOKEN_2022_PROGRAM_ID,
-        }
-      );
+  // Fetch token accounts and balances
+  const fetchAllTokens = async () => {
+  try {
+    const allAccounts = await connection.getTokenAccountsByOwner(
+      new PublicKey(pubKey),
+      {
+        programId: TOKEN_PROGRAM_ID,
+      }
+    );
 
-      const tokensList = await Promise.all(
-        tokenAccounts.value.map(async ({ pubkey, account }) => {
-          try {
-            console.log("hello")
-            const accountInfo = AccountLayout.decode(account.data);
-            const mintAddress = new PublicKey(accountInfo.mint);
-            const metadata = await getTokenMetadata(connection, mintAddress);
-            const mintInfo = (await connection.getParsedAccountInfo(
-              mintAddress
-            )) as any;
+    console.log("All accounts fetched:", allAccounts);
 
-            const decimals = mintInfo.value?.data?.parsed?.info?.decimals || 0;
+    const fetchedTokens = await Promise.all(
+      allAccounts.value.map(async ({ pubkey, account }) => {
+        try {
+          const accountInfo = AccountLayout.decode(account.data);
 
-            const formattedAmount = (
-              BigInt(accountInfo.amount) / BigInt(10 ** decimals)
-            ).toString();
+          const mintAddress = new PublicKey(accountInfo.mint);
 
-            const tokenPrice = await fetch(
-                `https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112`
-            );
-
-            console.log("sol price",tokenPrice)
-            
-              
-
-            return {
-              address: pubkey.toString(),
-              amount: formattedAmount,
-              symbol: metadata?.symbol,
-              name: metadata?.name || "Unknown Token",
-              uri: metadata?.uri || null,
-            };
-          } catch (metadataError) {
-            console.error(
-              `Error fetching metadata for account ${pubkey}:`,
-              metadataError
-            );
-            return null;
+          // Fetch mint information for decimals
+          const mintInfo = await connection.getParsedAccountInfo(mintAddress);
+          let decimals = 9;
+          if (mintInfo.value) {
+            const parsedInfo = (mintInfo.value.data as ParsedAccountData).parsed;
+            decimals = parsedInfo?.info?.decimals || 9;
           }
-        })
-      );
 
-      const validTokens = tokensList.filter(
-        (
-          token
-        ): token is {
-          address: string;
-          amount: string;
-          symbol: string;
-          name: string;
-          uri: string | null;
-        } => token !== null
-      );
+          // Fetch price from Jupiter API
+          const response = await fetch(
+            `https://api.jup.ag/price/v2?ids=${mintAddress}`
+          );
+          const priceData = await response.json();
+          const tokenPrice = priceData?.data?.[mintAddress.toBase58()]?.price;
 
-      setTokens(validTokens);
-    } catch (err) {
-      console.error("Error fetching token accounts:", err);
-      setTokenFetchError("Failed to load tokens. Please try again.");
-    }
+          // Fetch metadata
+          let metadata = null;
+          try {
+            const metadataPDA = await Metadata.getPDA(mintAddress);
+            metadata = await Metadata.load(connection, metadataPDA);
+          } catch (metadataError) {
+            console.warn(`Metadata fetch failed for ${pubkey}:`, metadataError);
+          }
+
+          const rawAmount = Number(accountInfo.amount) / 10 ** decimals;
+          const userPrice = tokenPrice ? rawAmount * tokenPrice : 0;
+
+          setTotalBalance((prev) => prev + userPrice);
+
+          return {
+            address: pubkey.toString(),
+            mint: mintAddress.toString(),
+            decimal: decimals.toString(),
+            amount: Number(rawAmount.toFixed(2)), 
+            symbol: metadata?.data?.data?.symbol || "Unknown",
+            name: metadata?.data?.data?.name || "Unknown",
+            uri: metadata?.data?.data?.uri || null,
+            price: userPrice,
+          };
+        } catch (error) {
+          console.error(`Error processing account ${pubkey}:`, error);
+          return null;
+        }
+      })
+    );
+
+    console.log("Fetched tokens:", fetchedTokens);
+
+    setTokens(fetchedTokens.filter((token) => token !== null));
+  } catch (err) {
+    console.error("Error fetching token accounts:", err);
+    setTokenFetchError("Failed to load tokens. Please try again.");
+  }
+};
+
+
+  const listenForChanges = async () => {
+    setTotalBalance(0);
+    getBalance();
+    fetchAllTokens();
+    const pbk = new PublicKey(pubKey);
+    connection.onAccountChange(pbk, async (accountInfo) => {listenForChanges()});
+    
   };
+
 
   useEffect(() => {
     if (isAuthenticated && pubKey && walletExists) {
       getBalance();
-      fetchAllToken();
+      fetchAllTokens();
     }
-  }, [isAuthenticated, walletExists]);
+  }, [isAuthenticated, walletExists, pubKey]);
 
   return (
-    <BalanceContext.Provider value={{ balance, tokens, tokenFetchError }}>
+    <BalanceContext.Provider
+      value={{ balance, tokens, tokenFetchError, fetchAllTokens ,listenForChanges,totalBalance}}
+    >
       {children}
     </BalanceContext.Provider>
   );
@@ -148,6 +203,6 @@ export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({
 export const useBalance = () => {
   const context = useContext(BalanceContext);
   if (!context)
-    throw new Error("useWallet must be used within a WalletProvider");
+    throw new Error("useBalance must be used within a BalanceProvider");
   return context;
 };
