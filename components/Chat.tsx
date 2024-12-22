@@ -4,6 +4,24 @@ import { useWallet } from "@/hooks/useWallet";
 import React, { useState } from "react";
 import { useBalance } from "@/hooks/useBalance";
 import { useSolanaAgent } from "@/hooks/useSolanaAgent";
+import { AppSidebar } from "@/components/app-sidebar"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
+import { Separator } from "@/components/ui/separator"
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar"
+import ChatArea from "./chat-area"
+import { ArrowUp, ArrowUpRight } from "lucide-react"
+
 
 interface Message {
   id: number;
@@ -11,7 +29,8 @@ interface Message {
   content: string;
 }
 
-const Chat = () => {
+export default function Chat() {
+    
   const { pubKey, secKey, showKey, toggleKeyVisibility, logout } = useWallet();
   const { balance, tokens, listenForChanges, totalBalance } = useBalance();
   const { processTransfer, processSwap,processPumpFunToken } = useSolanaAgent();
@@ -56,99 +75,44 @@ const Chat = () => {
       setMessages((prev) => [...prev, errorMessage]);
     }
   };
-
+    
   return (
-    <div className="flex min-h-screen bg-gray-900 text-white">
-      {/* Wallet Section */}
-      <div className="w-1/3 bg-gray-800 p-6 border-r border-gray-700">
-        <h1 className="text-2xl font-bold mb-6 text-center">Your Wallet</h1>
-        <div className="mb-4">
-          <p className="text-sm text-gray-400 mb-2">Public Key:</p>
-          <p className="text-base font-mono break-all mb-4">{pubKey}</p>
-        </div>
-        <div className="mb-4">
-          <p className="text-sm text-gray-400">SOL Balance:</p>
-          <p className="text-lg font-semibold mb-4">{balance} SOL</p>
-          <p className="text-sm text-gray-400">Total Balance:</p>
-          <p className="text-lg font-semibold mb-6">${totalBalance.toFixed(2)}</p>
-        </div>
-        <button
-          onClick={listenForChanges}
-          className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 mb-4"
-        >
-          Refresh Tokens
-        </button>
-        <div className="space-y-4">
-          {tokens.map((token) => (
-            <div
-              key={token.address}
-              className="p-4 bg-gray-700 rounded-lg shadow-sm"
-            >
-              <p className="text-base font-semibold">{token.name}</p>
-              <p className="text-sm text-gray-400">
-                {new Intl.NumberFormat("en-US").format(Number(token.amount))}{" "}
-                {token.symbol}
-              </p>
-            </div>
-          ))}
-        </div>
-        <div className="flex justify-between mt-6">
-          <button
-            onClick={toggleKeyVisibility}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-          >
-            {showKey ? "Hide Private Key" : "Show Private Key"}
-          </button>
-          <button
-            onClick={logout}
-            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-          >
-            Logout
-          </button>
-        </div>
-      </div>
-
-      {/* Chat Section */}
-      <div className="w-2/3 p-6">
-        <h1 className="text-4xl font-bold mb-6">Chat Section</h1>
-        <div className="h-3/4 bg-gray-800 rounded-lg p-4 text-gray-300 overflow-y-auto">
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`mb-4 ${
-                msg.sender === "user" ? "text-right" : "text-left"
-              }`}
-            >
-              <p
-                className={`inline-block px-4 py-2 rounded-lg ${
-                  msg.sender === "user"
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-700 text-gray-200"
-                }`}
-              >
-                {msg.content}
-              </p>
-            </div>
-          ))}
-        </div>
-        <div className="mt-4 flex">
-          <input
-            type="text"
-            className="flex-1 px-4 py-2 rounded-l-lg bg-gray-700 text-white"
-            placeholder="Enter your message..."
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-          />
-          <button
-            onClick={handleSendMessage}
-            className="px-6 py-2 bg-blue-500 text-white rounded-r-lg hover:bg-blue-600"
-          >
-            Send
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default Chat;
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+          <div className="flex items-center gap-2 px-4">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mr-2 h-4" />
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem className="hidden md:block">
+                  <BreadcrumbLink href="#">
+                    Have fun with kira
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="hidden md:block" />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Chat Season</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+        </header>
+        <section className="flex flex-col items-center justify-center h-[80vh]">
+          <div className="">
+            <ChatArea/>
+          </div>
+          <div className="flex items-center justify-center gap-2 mt-4 px-4 ">
+              <div className="flex gap-1 items-center border px-3 rounded-full text-xs">Make an onboarding form <ArrowUpRight className="w-3"/></div>
+              <div className="flex gap-1 items-center border px-3 rounded-full text-xs">Build now solana <ArrowUpRight className="w-3"/></div>
+          </div>
+          <div className="flex items-center justify-center gap-2 mt-2 w-[400px]">
+              <div className="flex gap-1 items-center border px-3 rounded-full text-xs">Swap my token to USDC <ArrowUpRight className="w-3"/></div>
+              {/* <div className="flex gap-1 items-center border px-3 rounded-full text-xs">Build now solana <ArrowUpRight className="w-3"/></div> */}
+          </div>
+        </section>
+      </SidebarInset>
+    </SidebarProvider>
+  )
+}

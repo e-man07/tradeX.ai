@@ -11,7 +11,9 @@ export default function Home() {
       <div className="min-h-[calc(100vh-2rem)] md:min-h-[calc(100vh-6rem)] lg:min-h-[calc(100vh-8rem)] flex items-center justify-center">
         <div className="max-w-md text-left px-4">
           <div className="mb-6">
-            <div className="h-12 w-12 border dark:bg-white rounded-sm"></div>
+          <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-zinc-900 to-zinc-800 flex items-center justify-center shadow-lg">
+          <div className="w-8 h-8 rounded-full border-2 border-white shadow-[0_0_6px_1px_rgba(255,255,255,0.6)]" />
+          </div>
           </div>
           
           <h1 className="text-2xl font-medium tracking-tight mb-1">
