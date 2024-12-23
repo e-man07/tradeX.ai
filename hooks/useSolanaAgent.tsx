@@ -11,7 +11,6 @@ import { useBalance } from "./useBalance";
 import { createContext, useContext } from "react";
 import { PublicKey } from "@solana/web3.js";
 import { TokenListProvider } from "@solana/spl-token-registry";
-import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 
 interface SwapData {
   from: string;
@@ -125,14 +124,6 @@ export const AgentProvider: React.FC<{ children: React.ReactNode }> = ({
         const mintAddress = new PublicKey(mintDetails.mint);
         const reciever = new PublicKey(recipient);
         const Amount = Number(amount);
-
-        // Ensure recipient has an associated token account
-        const recipientTokenAccount = await getOrCreateAssociatedTokenAccount(
-          agent.connection,
-          keyPair,
-          mintAddress,
-          new PublicKey(recipient)
-        );
 
         // Transfer SPL tokens
         const transferSignature = await transfer(
