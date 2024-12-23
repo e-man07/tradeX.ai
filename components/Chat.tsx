@@ -31,8 +31,6 @@ interface Message {
 
 export default function Chat() {
     
-  const { pubKey, secKey, showKey, toggleKeyVisibility, logout } = useWallet();
-  const { balance, tokens, listenForChanges, totalBalance } = useBalance();
   const { processTransfer, processSwap,processPumpFunToken } = useSolanaAgent();
   
     
