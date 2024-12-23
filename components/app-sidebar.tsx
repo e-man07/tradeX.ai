@@ -36,6 +36,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     }, 1000);
   };
 
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(pubKey);
+    alert("Address copied to clipboard!");
+  };
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -44,7 +49,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
       <SidebarContent>
         <div className=" h-full max-w-md p-4 border">
+          <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-white">Chat History</h2>
+          <h2 className="text-sm font-bold text-white p-2 bg-[#131313] rounded-lg backdrop-blur-sm shadow-inner shadow-white/10 ">New Chat +</h2>
+          </div>
         </div>
       </SidebarContent>
 
@@ -52,7 +60,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <div className="w-full h-full max-w-md p-8 bg-[#131313] backdrop-blur-sm shadow-inner shadow-white/10 border-zinc-800">
           <div className="flex items-center justify-between mt-[-15px] mb-10">
 
-            <h2 className="text-sm font-bold text-white">Wallet : {publick}</h2>
+            <h2 className="text-sm font-bold text-white" onClick={copyToClipboard}>Wallet : {publick}</h2>
             <button
               onClick={handleRefresh}
               className=""

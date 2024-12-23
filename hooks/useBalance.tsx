@@ -12,9 +12,9 @@ import { useWallet } from "./useWallet";
 import { programs } from "@metaplex/js";
 
 const {
-  metadata: { Metadata, MetadataData },
+  metadata: { Metadata },
 } = programs;
-import { AccountLayout, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID} from "@solana/spl-token";
+import { AccountLayout, TOKEN_PROGRAM_ID} from "@solana/spl-token";
 
 interface BalanceContextProps {
   balance: string;
@@ -32,6 +32,7 @@ interface BalanceContextProps {
   listenForChanges:()=>void;
   tokenFetchError: string;
   totalBalance:number;
+  solBalance:number;
   isFetching:boolean;
 }
 
@@ -48,6 +49,7 @@ export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({
   const [balance, setBalance] = useState<string>("");
   const [tokenFetchError, setTokenFetchError] = useState<string>("");
   const [isFetching, setIsFetching] = useState<boolean>(false);
+  const [solBalance, setSolBalance] = useState<number>(0);
   const [tokens, setTokens] = useState<
     {
       address: string;
@@ -69,6 +71,7 @@ export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({
       const publicKey = new PublicKey(pubKey);
       const lamports = await connection.getBalance(publicKey);
       const solBalance = lamports / LAMPORTS_PER_SOL;
+      setSolBalance(solBalance);
       const response = await fetch(
         "https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112"
       );
@@ -85,6 +88,7 @@ export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({
         setTotalBalance(0);
         const lamports = accountInfo.lamports || 0;
         const updatedSolBalance = lamports / LAMPORTS_PER_SOL;
+        setSolBalance(updatedSolBalance);
         const response = await fetch(
           "https://api.jup.ag/price/v2?ids=So11111111111111111111111111111111111111112"
         );
@@ -198,7 +202,7 @@ export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({
 
   return (
     <BalanceContext.Provider
-      value={{ balance, tokens, tokenFetchError, fetchAllTokens ,listenForChanges,totalBalance,isFetching}}
+      value={{ balance, tokens, tokenFetchError, fetchAllTokens ,listenForChanges,totalBalance,isFetching,solBalance}}
     >
       {children}
     </BalanceContext.Provider>
