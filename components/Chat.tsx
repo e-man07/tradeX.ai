@@ -34,54 +34,7 @@ export default function Chat() {
   const { pubKey, secKey, showKey, toggleKeyVisibility, logout } = useWallet();
   const { balance, tokens, listenForChanges, totalBalance } = useBalance();
   const { processTransfer, processSwap,processPumpFunToken } = useSolanaAgent();
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [inputValue, setInputValue] = useState<string>("");
-
-  const handleSendMessage = async () => {
-    if (!inputValue.trim()) return;
-
-    // Add user's message to the chat
-    const userMessage: Message = {
-      id: Date.now(),
-      sender: "user",
-      content: inputValue,
-    };
-    setMessages((prev) => [...prev, userMessage]);
-
-    // Clear the input field
-    setInputValue("");
-
-    try {
-      
-      const data = {
-        from: "SOL",
-        to: "USDC",
-        amount: "0.0001",
-      };
-      const signature = await processSwap(data);
-
-      const systemMessage: Message = {
-        id: Date.now(),
-        sender: "system",
-        content: `Swap successful! Transaction signature: ${signature}`,
-      };
-      setMessages((prev) => [...prev, systemMessage]);
-    } catch (error: any) {
-      const errorMessage: Message = {
-        id: Date.now(),
-        sender: "system",
-        content: `Error: ${error.message}`,
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-    }
-  };
- 
-  //TODO: to complete this function and send the prompt to the route 
-  const sendPrompt = async (prompt: string) => {
-    const response = await fetch("/api/generate", {
-        
-    })
-  }
+  
     
   return (
     <SidebarProvider>

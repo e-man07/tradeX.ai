@@ -1,7 +1,7 @@
 import OpenAi from "openai";
 
 const openai = new OpenAi({
-  apiKey: `${process.env.GEMINI_API_KEY}`,
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 console.log("OpenAI initialized", openai);
@@ -9,6 +9,7 @@ console.log("OpenAI initialized", openai);
 export const POST = async (req: Request): Promise<Response> => {
   try {
     const body = await req.json();
+    console.log("body -> ", body);
     const { prompt } = body;
 
     if (!prompt) {
@@ -22,7 +23,8 @@ export const POST = async (req: Request): Promise<Response> => {
 
     // Process prompt to determine action
     if (prompt.toLowerCase().includes("swap")) {
-      const [_, from, to, amount] = prompt.match(/Swap (\S+) to (\S+) (\S+)/i) || [];
+      const [_, from, to, amount] =
+        prompt.match(/Swap (\S+) to (\S+) (\S+)/i) || [];
       if (from && to && amount) {
         formattedResponse = {
           interface: "SwapData",
@@ -32,7 +34,8 @@ export const POST = async (req: Request): Promise<Response> => {
         };
       }
     } else if (prompt.toLowerCase().includes("send")) {
-      const [_, amount, token, recipient] = prompt.match(/Send (\d+) (\S+) to (\S+)/i) || [];
+      const [_, amount, token, recipient] =
+        prompt.match(/Send (\d+) (\S+) to (\S+)/i) || [];
       if (amount && token && recipient) {
         formattedResponse = {
           interface: "TransferData",
@@ -58,7 +61,8 @@ export const POST = async (req: Request): Promise<Response> => {
     if (!formattedResponse) {
       formattedResponse = {
         error: "Prompt did not match any known actions",
-        message: "Please use keywords like 'swap', 'send', or 'create' with appropriate details.",
+        message:
+          "Please use keywords like 'swap', 'send', or 'create' with appropriate details.",
       };
     }
 
@@ -69,8 +73,8 @@ export const POST = async (req: Request): Promise<Response> => {
         headers: { "Content-Type": "application/json" },
       }
     );
-  } catch (err) {
-    console.error("Error occurred:", err);
+  } catch (err: any) {
+    console.log("Error occurred:", err);
     let errorMessage = "Unknown error";
     if (err instanceof Error) {
       errorMessage = err.message;
