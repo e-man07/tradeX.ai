@@ -96,8 +96,8 @@ export const AgentProvider: React.FC<{ children: React.ReactNode }> = ({
   //Initialize agent
   const agent = new SolanaAgentKit(
     `${secKey}`,
-    "https://mainnet.helius-rpc.com/?api-key=ddb0234e-0765-42fa-88e8-41825d43dbdd",
-    "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"
+    `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`,
+    `${process.env.OPENAI_API_KEY}`
   );
 
   //send transaction
