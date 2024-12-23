@@ -7,8 +7,6 @@ const Wallet = () => {
   const [secretInput, setSecretInput]= useState("");
     const {
         walletExists,
-        pubKey,
-        isAuthenticated,
         createWallet,
         importWallet,
         authenticate,

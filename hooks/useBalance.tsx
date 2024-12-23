@@ -32,6 +32,7 @@ interface BalanceContextProps {
   listenForChanges:()=>void;
   tokenFetchError: string;
   totalBalance:number;
+  isFetching:boolean;
 }
 
 const BalanceContext = createContext<BalanceContextProps | null>(null);
@@ -46,6 +47,7 @@ export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({
   const { pubKey, isAuthenticated, walletExists } = useWallet();
   const [balance, setBalance] = useState<string>("");
   const [tokenFetchError, setTokenFetchError] = useState<string>("");
+  const [isFetching, setIsFetching] = useState<boolean>(false);
   const [tokens, setTokens] = useState<
     {
       address: string;
@@ -62,6 +64,7 @@ export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Get Balance in Sol
   const getBalance = async () => {
+    setIsFetching(true);
     try {
       const publicKey = new PublicKey(pubKey);
       const lamports = await connection.getBalance(publicKey);
@@ -74,7 +77,7 @@ export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({
         priceData.data?.So11111111111111111111111111111111111111112?.price
       const solValueInUSD = solBalance*solPrice
       setTotalBalance((prev)=>prev+solValueInUSD);
-      const bal = `${solBalance.toFixed(2)} SOL ($ ${solValueInUSD.toFixed(3)})`
+      const bal = `${solBalance.toFixed(4)} SOL ($ ${solValueInUSD.toFixed(3)})`
       
 
       setBalance(bal);
@@ -94,6 +97,7 @@ export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({
 
         setBalance(updatedBal);
       });
+      setIsFetching(false);
     } catch (error) {
       console.error("Error fetching balance:", error);
     }
@@ -101,6 +105,7 @@ export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Fetch token accounts and balances
   const fetchAllTokens = async () => {
+    setIsFetching(true);
   try {
     const allAccounts = await connection.getTokenAccountsByOwner(
       new PublicKey(pubKey),
@@ -146,7 +151,7 @@ export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({
           const userPrice = tokenPrice ? rawAmount * tokenPrice : 0;
 
           setTotalBalance((prev) => prev + userPrice);
-
+          
           return {
             address: pubkey.toString(),
             mint: mintAddress.toString(),
@@ -157,16 +162,16 @@ export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({
             uri: metadata?.data?.data?.uri || null,
             price: userPrice,
           };
+          
         } catch (error) {
           console.error(`Error processing account ${pubkey}:`, error);
           return null;
         }
       })
     );
-
-    console.log("Fetched tokens:", fetchedTokens);
-
+    
     setTokens(fetchedTokens.filter((token) => token !== null));
+    setIsFetching(false);
   } catch (err) {
     console.error("Error fetching token accounts:", err);
     setTokenFetchError("Failed to load tokens. Please try again.");
@@ -193,7 +198,7 @@ export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({
 
   return (
     <BalanceContext.Provider
-      value={{ balance, tokens, tokenFetchError, fetchAllTokens ,listenForChanges,totalBalance}}
+      value={{ balance, tokens, tokenFetchError, fetchAllTokens ,listenForChanges,totalBalance,isFetching}}
     >
       {children}
     </BalanceContext.Provider>

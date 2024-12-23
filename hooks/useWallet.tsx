@@ -54,9 +54,6 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({
     setSecKey(secretKey);
     setWalletExists(true);
     setKeyPair(keypair);
-    console.log("keypair-> ", keypair.publicKey.toString());
-    console.log("pubKey ->", pubKey);
-    console.log("secKey ->", secKey);
     return { pubKey: keypair.publicKey.toString(), secKey: secretKey };
   };
 
