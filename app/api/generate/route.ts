@@ -1,3 +1,4 @@
+//TODO:  fine tuning the prompt more so that we could get accurate results 
 import OpenAi from "openai";
 
 const openai = new OpenAi({
