@@ -1,0 +1,16 @@
+
+Command: shopt -s histappend
+Output:
+
+Exit Code: 0
+----
+Command: pwd
+Output:
+/home/piyushjha/Desktop/mystuff/solana/xkira
+Exit Code: 0
+----
+Command: clear
+Output:
+[H[2J[3J
+Exit Code: 0
+----
