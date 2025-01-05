@@ -2,14 +2,14 @@
 
 import { useSolanaAgent } from "@/hooks/useSolanaAgent";
 import { ArrowUp } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 
-interface Message {
-  id: number;
-  sender: "user" | "system";
-  content: string;
-}
+ export interface Message {
+     id: number;
+     sender: string;
+     content: string;
+ } 
 
 export default function ChatArea() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -36,32 +36,37 @@ export default function ChatArea() {
         prompt: userMessage.content,
       });
 
-      console.log("LLM Response:", result.data.message)
+      console.log("LLM Response:", result.data.response);
 
       let signature;
 
-    //   Determine action based on the API response
-        switch (result.data.response.interface) {
-          case "SwapData":
-            signature = await processSwap(result.data.response);
-            break;
-          case "TransferData":
-            signature = await processTransfer(result.data.response);
-            break;
-          case "pumpFunTokenData":
-            signature = await processPumpFunToken(result.data.response);
-            break;
-          default:
-            throw new Error("Unknown action. Please refine your prompt.");
-        }
+      //   Determine action based on the API response
+      switch (result.data.response.interface) {
+        case "regularPrompt":
+          setMessages((prev) => [...prev, result.data.response.message]);
+          break;
+        case "SwapData":
+          signature = await processSwap(result.data.response);
+          break;
+        case "TransferData":
+          signature = await processTransfer(result.data.response);
+          break;
+        case "pumpFunTokenData":
+          signature = await processPumpFunToken(result.data.response);
+          break;
+        default:
+          throw new Error("Please refine your prompt!!");
+      }
 
-      // Add system response to the chat
-      const systemMessage: Message = {
-        id: Date.now(),
-        sender: "system",
-        content: `Action successful! Transaction signature: ${signature}`,
-      };
-      setMessages((prev) => [...prev, systemMessage]);
+      if(signature) {
+        // Add system response to the chat
+        const systemMessage: Message = {
+          id: Date.now(),
+          sender: "system",
+          content: `Action successful! Transaction signature: ${signature}`,
+        };
+        setMessages((prev) => [...prev, systemMessage]);
+      }
     } catch (error: any) {
       console.error("Error:", error);
       const errorMessage: Message = {
@@ -73,6 +78,11 @@ export default function ChatArea() {
     }
   };
 
+  useEffect(() => {
+    console.log(messages)
+  }, [messages])
+
+
   return (
     <div className="flex w-[50vw] border flex-col rounded-lg p-4">
       <h1 className="font-semibold tracking-tight text-2xl md:text-3xl text-white text-center mb-4">
@@ -81,7 +91,7 @@ export default function ChatArea() {
 
       {/* Chat Window */}
       <div className="flex-1 overflow-y-auto rounded-lg p-4 shadow-inner">
-        {messages.map((message) => (
+        {messages.map((message: Message) => (
           <div
             key={message.id}
             className={`flex mb-2 ${
