@@ -12,6 +12,7 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
   }
 
   .dark {
@@ -28,10 +29,10 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 0 0% 100%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
     --primary: 0 0% 9%;
@@ -98,11 +99,10 @@
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
+
+  
   body {
-    @apply bg-background text-foreground;
+    background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
   }
-}
+

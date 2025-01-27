@@ -3,31 +3,37 @@
 import { useSolanaAgent } from "@/hooks/useSolanaAgent";
 import { ArrowUp } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useChatContext } from "@/hooks/ChatContext";
 import axios from "axios";
-
- export interface Message {
-     id: number;
-     sender: string;
-     content: string;
- } 
+import { Message } from "@/hooks/ChatContext";
 
 export default function ChatArea() {
-  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState<string>("");
+  const { clearMessages, setClearMessages, messages, setMessages } =
+    useChatContext();
   const { processSwap, processTransfer, processPumpFunToken } =
     useSolanaAgent();
 
+  useEffect(() => {
+    if (clearMessages) {
+      setMessages([]);
+      setClearMessages(false);
+      console.log("Messages cleared!");
+    }
+    console.log(messages);
+  }, [clearMessages]);
+
+  //function
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
     // Add user's message to the chat
     const userMessage: Message = {
-      id: Date.now(),
-      sender: "user",
+      id: Date.now().toString(),
+      sender: "User",
       content: inputValue,
     };
     setMessages((prev) => [...prev, userMessage]);
-
     // Clear the input field
     setInputValue("");
 
@@ -58,11 +64,11 @@ export default function ChatArea() {
           throw new Error("Please refine your prompt!!");
       }
 
-      if(signature) {
+      if (signature) {
         // Add system response to the chat
         const systemMessage: Message = {
-          id: Date.now(),
-          sender: "system",
+          id: Date.now().toString(),
+          sender: "System",
           content: `Action successful! Transaction signature: ${signature}`,
         };
         setMessages((prev) => [...prev, systemMessage]);
@@ -70,18 +76,13 @@ export default function ChatArea() {
     } catch (error: any) {
       console.error("Error:", error);
       const errorMessage: Message = {
-        id: Date.now(),
-        sender: "system",
+        id: Date.now().toString(),
+        sender: "System",
         content: `Error: ${error.message || "An unknown error occurred."}`,
       };
       setMessages((prev) => [...prev, errorMessage]);
     }
   };
-
-  useEffect(() => {
-    console.log(messages)
-  }, [messages])
-
 
   return (
     <div className="flex w-[50vw] border flex-col rounded-lg p-4">
@@ -95,12 +96,12 @@ export default function ChatArea() {
           <div
             key={message.id}
             className={`flex mb-2 ${
-              message.sender === "user" ? "justify-end" : "justify-start"
+              message.sender === "User" ? "justify-end" : "justify-start"
             }`}
           >
             <div
               className={`px-4 py-2 rounded-lg text-sm shadow-lg max-w-[80%] ${
-                message.sender === "user"
+                message.sender === "User"
                   ? "bg-blue-500 text-white"
                   : "bg-gray-700 text-white"
               }`}
@@ -117,6 +118,11 @@ export default function ChatArea() {
           placeholder="Ask Kira to perform Solana actions..."
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleSendMessage();
+            }
+          }}
           className="flex-1 bg-[#1a1a1a] text-white text-sm px-4 py-2 rounded-lg outline-none"
         />
         <button

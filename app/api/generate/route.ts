@@ -115,6 +115,13 @@ const createTokenFunctionDeclaration = {
   },
 };
 
+// Solana address validation helper
+const isSolanaAddress = (address: string): boolean => {
+  // Base58 check and length validation for Solana addresses
+  const base58Regex = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+  return base58Regex.test(address);
+};
+
 // Process the function call result
 function processResult(functionName: string, args: any): ActionResponse {
   switch (functionName) {
@@ -171,7 +178,11 @@ export const POST = async (req: Request): Promise<Response> => {
   let formattedResponse: ActionResponse = {
     error: "No action detected",
     message:
-      "Please use keywords like 'swap', 'send', or 'create' with appropriate details.",
+      "Please use keywords like 'swap', 'send', or 'create' with appropriate details."+
+      "Please specify what you'd like to do on Solana blockchain. You can:\n" +
+      "1. Swap tokens (e.g., 'swap 1 SOL to USDC' or 'exchange 100 USDC for RAY')\n" +
+      "2. Transfer tokens (e.g., 'send 0.5 SOL to <solana-address>' or 'transfer 100 USDC to <solana-address>')\n" +
+      "3. Create a new SPL token (e.g., 'create token named MyToken with symbol MTK')"
   };
 
   try {
@@ -192,12 +203,6 @@ export const POST = async (req: Request): Promise<Response> => {
 
     const generativeModel = genAI.getGenerativeModel({
       model: "gemini-1.5-flash",
-      //   toolConfig: {
-      //     functionCallingConfig: {
-      //       mode: FunctionCallingMode.ANY,
-      //       allowedFunctionNames: ["swapTokens", "transferTokens", "createToken"],
-      //     },
-      //   },
       tools: [
         {
           functionDeclarations: [
@@ -209,7 +214,42 @@ export const POST = async (req: Request): Promise<Response> => {
       ],
     });
 
-    const chat = generativeModel.startChat();
+    const chat = generativeModel.startChat({
+      history: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: `You are a Solana blockchain assistant that helps users with token operations. Please interpret user requests and execute the appropriate action:
+
+          For SWAPS on Solana:
+          - Handle common Solana tokens: SOL, USDC, RAY, SRM, etc.
+          - Support both token symbols and SPL token addresses
+          - Understand Solana DEX terminology (like Raydium, Orca)
+          - Amounts should be in decimal format (1 SOL = 1.0)
+
+          For TRANSFERS on Solana:
+          - Validate Solana wallet addresses (Base58 format)
+          - Handle SOL and SPL token transfers
+          - Support formats like "send X SOL to address"
+          - Ensure proper decimal places for different tokens
+
+          For SPL TOKEN CREATION:
+          - Guide users through SPL token creation process
+          - Collect required metadata for token
+          - Support Metaplex metadata standards
+          - Handle token image storage on Arweave
+
+          Always validate:
+          - Solana wallet addresses
+          - Token existence on Solana
+          - Proper amount formats for SOL/SPL tokens`,
+            },
+          ],
+        },
+      ],
+    });
+    
 
     try {
       console.log("trying to do normal conversations before!");
@@ -222,6 +262,7 @@ export const POST = async (req: Request): Promise<Response> => {
       const responseText = result.response.text();
       const functionCalls = result.response.functionCalls();
 
+      //response for normal prompt 
       if (responseText) {
         return new Response(
           JSON.stringify({

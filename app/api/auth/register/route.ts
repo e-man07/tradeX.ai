@@ -6,7 +6,8 @@ import NCrypt from "ncrypt-js";
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || "your_strong_encryption_key";
+const ENCRYPTION_KEY =
+  process.env.ENCRYPTION_KEY || "your_strong_encryption_key";
 const ncrypt = new NCrypt(ENCRYPTION_KEY);
 
 export async function POST(request: NextRequest) {

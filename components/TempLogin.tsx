@@ -73,6 +73,7 @@ export default function TempLogin() {
 
       if (response.status === 200) {
         importWallet(response.data.secretKey, password);
+        localStorage.setItem("userId", response.data);
       }
     } catch (error) {
       console.error("Error during login:", error);

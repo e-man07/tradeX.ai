@@ -13,6 +13,8 @@ import { TeamSwitcher } from "@/components/team-switcher";
 import { useBalance } from "@/hooks/useBalance";
 import { RefreshCcw } from "lucide-react";
 import { useWallet } from "@/hooks/useWallet";
+import { useChatContext } from "@/hooks/ChatContext";
+import { saveChat } from "@/app/actions/saveChat";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const {
@@ -25,7 +27,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   } = useBalance();
   const { pubKey } = useWallet();
   const publick = pubKey.slice(0, 5) + "..." + pubKey.slice(-5);
-
+  const { clearMessages, setClearMessages, messages, setMessages } =
+    useChatContext();
   const [isRefreshing, setIsRefreshing] = React.useState(false);
 
   const handleRefresh = async () => {
@@ -41,6 +44,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     alert("Address copied to clipboard!");
   };
 
+  //TODO: implement the logic of saving the data here
+  const handleNewChat = () => {
+    const userId = window.localStorage.getItem("userId") as string;
+    if (!clearMessages) {
+      saveChat(userId, messages);
+      setClearMessages(true);
+      console.log("New chat initiated. All messages cleared! ");
+    }
+  };
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -50,8 +63,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <div className=" h-full max-w-md p-4 border">
           <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-white">Chat History</h2>
-          <h2 className="text-sm font-bold text-white p-2 bg-[#131313] rounded-lg backdrop-blur-sm shadow-inner shadow-white/10 ">New Chat +</h2>
+            <h2 className="text-lg font-bold text-white">Chat History</h2>
+            {/* TODO: New chat option should work, it should create a new instance and the previous chat should be saved in the History */}
+            <button
+              className="text-sm font-bold text-white p-2 bg-[#131313] rounded-lg backdrop-blur-sm shadow-inner shadow-white/10 hover:bg-white hover:text-black"
+              onClick={handleNewChat}
+            >
+              New Chat
+            </button>
           </div>
         </div>
       </SidebarContent>
@@ -59,8 +78,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent className="mt-[-170px]">
         <div className="w-full h-full max-w-md p-8 bg-[#131313] backdrop-blur-sm shadow-inner shadow-white/10 border-zinc-800">
           <div className="flex items-center justify-between mt-[-15px] mb-10">
-
-            <h2 className="text-sm font-bold text-white" onClick={copyToClipboard}>Wallet : {publick}</h2>
+            <h2
+              className="text-sm font-bold text-white"
+              onClick={copyToClipboard}
+            >
+              Wallet : {publick}
+            </h2>
             <button
               onClick={handleRefresh}
               className=""

@@ -42,7 +42,7 @@ export const BalanceProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const connection = new Connection(
-    "https://mainnet.helius-rpc.com/?api-key=ddb0234e-0765-42fa-88e8-41825d43dbdd",
+    `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`,
     "confirmed"
   );
   const { pubKey, isAuthenticated, walletExists } = useWallet();

@@ -1,37 +1,51 @@
-// page.js
-import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import Hero from '@/components/features/hero'
+import HowItWorks from '@/components/features/how-it-works'
+import Features from '@/components/features/features'
+import UseCases from '@/components/features/use-cases'
+import CallToAction from '@/components/features/call-to-action'
+import Footer from '@/components/features/footer'
+import ShowcaseCards from '@/components/features/showcase-cards'
+
 
 export default function Home() {
   return (
-    <div className="md:min-h-screen relative px-4 md:p-12 lg:p-16">
-      <div className="hidden md:block absolute md:top-12 lg:top-16 left-0 right-0 h-[1px] bg-zinc-800/20 dark:bg-zinc-800" />
-      <div className="hidden md:block absolute md:bottom-12 lg:bottom-16 left-0 right-0 h-[1px] bg-zinc-800/20 dark:bg-zinc-800" />
-      <div className="hidden md:block absolute md:left-12 lg:left-48 top-0 bottom-0 w-[1px] bg-zinc-800/20 dark:bg-zinc-800" />
-      <div className="hidden md:block absolute md:right-12 lg:right-48 top-0 bottom-0 w-[1px] bg-zinc-800/20 dark:bg-zinc-800" />
-      <div className="min-h-[calc(100vh-2rem)] md:min-h-[calc(100vh-6rem)] lg:min-h-[calc(100vh-8rem)] flex items-center justify-center">
-        <div className="max-w-md text-left px-4">
-          <div className="mb-6">
-          <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-zinc-900 to-zinc-800 flex items-center justify-center shadow-lg">
-          <div className="w-8 h-8 rounded-full border-2 border-white shadow-[0_0_6px_1px_rgba(255,255,255,0.6)]" />
-          </div>
-          </div>
-          
-          <h1 className="text-2xl font-medium tracking-tight mb-1">
-          Simplify Solana with your <br className='md:hidden' /> all-in-one AI assistant for every action.
-          </h1>
-          
-          <p className="text-zinc-500 mb-6">
-          AI made simple for all your Solana actions
-          </p>
-          
-          <Link 
-            href="/agent"
-            className="rounded-full border border-solid border-transparent transition-colors bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm px-6 py-3 font-medium"
+    <main className="min-h-screen bg-black text-white">
+      {/* Grid Background */}
+      <div 
+        className="fixed inset-0 z-0 opacity-20"
+        style={{
+          backgroundImage: 'linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), url("/grid-pattern.svg")',
+          backgroundSize: '50px 50px',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'repeat',
+        }}
+      />
+      
+      {/* Content */}
+      <div className="relative z-10">
+        {/* Header */}
+        <header className="container mx-auto px-4 py-6 flex justify-between items-center">
+          <div className="text-xl font-bold">tradeX.ai</div>
+          <Button 
+            className="bg-purple-600 hover:bg-purple-700 text-white"
+            size="lg"
           >
-            Get Started
-          </Link>
+            Connect Wallet
+          </Button>
+        </header>
+
+        <Hero />
+        <ShowcaseCards />
+        <div className="mt-20"> {/* Add spacing between ShowcaseCards and HowItWorks */}
+          <HowItWorks />
         </div>
+        <Features />
+        <UseCases />
+        <CallToAction />
+        <Footer />
       </div>
-    </div>
+    </main>
   )
 }
+

@@ -88,7 +88,7 @@ export const AgentProvider: React.FC<{ children: React.ReactNode }> = ({
     const tokenListProvider = new TokenListProvider();
     const tokenList = await tokenListProvider.resolve();
     console.log("tokenlist", tokenList);
-    const tokens = tokenList.filterByChainId(101).getList(); // Mainnet chainId is 101
+    const tokens = tokenList.filterByChainId(103).getList(); // Devnet chainId is 103
     const token = tokens.find((t) => t.symbol === symbol);
     return token ? token.address : null;
   }
@@ -96,8 +96,8 @@ export const AgentProvider: React.FC<{ children: React.ReactNode }> = ({
   //Initialize agent
   const agent = new SolanaAgentKit(
     `${secKey}`,
-    `https://mainnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`,
-    `${process.env.OPENAI_API_KEY}`
+    `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`,
+    `${process.env.GEMINI_API_KEY}`
   );
 
   //send transaction

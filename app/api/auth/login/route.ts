@@ -4,14 +4,14 @@ import bcrypt from "bcrypt";
 import NCrypt from "ncrypt-js";
 
 const prisma = new PrismaClient();
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || "your_strong_encryption_key";
+const ENCRYPTION_KEY =
+  process.env.ENCRYPTION_KEY || "your_strong_encryption_key";
 const ncrypt = new NCrypt(ENCRYPTION_KEY);
 
 export async function POST(request: NextRequest) {
   try {
     // Parse the request body
     const { email, password } = await request.json();
-
     // Validate input
     if (!email || !password) {
       return NextResponse.json(
@@ -26,10 +26,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { message: "User not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
 
     // Verify password
@@ -47,9 +44,11 @@ export async function POST(request: NextRequest) {
 
     // Send pubKey and decrypted secretKey
     return NextResponse.json(
+        //Saving the userId with along with other details so that we can use them while saving the instance 
       {
         message: "Login successful",
         pubKey: user.pubKey,
+        userId: user.id,
         secretKey: decryptedSecretKey,
       },
       { status: 200 }
