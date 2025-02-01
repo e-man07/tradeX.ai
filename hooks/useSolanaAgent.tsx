@@ -27,7 +27,7 @@ interface pumpFunTokenData {
   tokenName: string;
   tokenTicker: string;
   tokenDescription: string;
-  tokenImage: string;
+  tokenImage: any;
 }
 
 interface AgentContextProps {
@@ -96,8 +96,9 @@ export const AgentProvider: React.FC<{ children: React.ReactNode }> = ({
   //Initialize agent
   const agent = new SolanaAgentKit(
     `${secKey}`,
-    `https://devnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`,
-    `${process.env.GEMINI_API_KEY}`
+    `https://devnet.helius-rpc.com?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`,
+    `${process.env.GEMINI_API_KEY}`,
+    
   );
 
   //send transaction
@@ -198,27 +199,65 @@ export const AgentProvider: React.FC<{ children: React.ReactNode }> = ({
     if (!keyPair) {
       throw new Error("Keypair is not initialized.");
     }
-
+  
     const { tokenName, tokenTicker, tokenDescription, tokenImage } = data;
-
+  
     try {
+      // If tokenImage is a URL, fetch the image and convert it to a File object
+      let imageFile: File;
+      if (typeof tokenImage === "string") {
+        const imageResponse = await fetch(tokenImage);
+        const imageBlob = await imageResponse.blob();
+        imageFile = new File([imageBlob], "token_image.png", { type: "image/png" });
+      } else if (tokenImage instanceof File) {
+        // If tokenImage is already a File object, use it directly
+        imageFile = tokenImage;
+      } else {
+        throw new Error("Invalid image file.");
+      }
+  
+      // Create form data with both metadata and file
+      const formData = new FormData();
+      formData.append("name", tokenName);
+      formData.append("symbol", tokenTicker);
+      formData.append("description", tokenDescription);
+      formData.append("showName", "true");
+      formData.append("file", imageFile);
+  
+      // Upload to IPFS through our API route
+      const response = await fetch("/api/ipfs", {
+        method: "POST",
+        body: formData,
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Token creation failed:", errorData);
+        throw new Error(`Token creation failed: ${errorData.error || response.statusText}`);
+      }
+  
+      const ipfsData = await response.json();
+  
+      // Now launch the token with the IPFS response
       const mintSignature = await launchPumpFunToken(
         agent,
         tokenName,
         tokenTicker,
         tokenDescription,
-        tokenImage
+        ipfsData.metadata.image // Use the image URL from the metadata
       );
+  
       return {
         signature: mintSignature.signature,
         tokenAddress: mintSignature.mint,
-        metadataURI: mintSignature.metadataUri,
+        metadataURI: ipfsData.metadataUri
       };
     } catch (error: any) {
-      throw new Error(`Token creation failed: ${error.message}`);
+      console.error("Error in processPumpFunToken:", error);
+      throw new Error(error.message || "Failed to create token");
     }
   };
-
+  
   return (
     <AgentContext.Provider
       value={{ processSwap, processTransfer, processPumpFunToken }}

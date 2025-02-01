@@ -1,136 +1,238 @@
 "use client";
 
 import { useSolanaAgent } from "@/hooks/useSolanaAgent";
-import { ArrowUp } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useChatContext } from "@/hooks/ChatContext";
+import { Bot, Send, User } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Message, Chat } from '@prisma/client';
+import { useChatHistory } from "@/hooks/useChatHistory";
+import { useWallet } from "@/hooks/useWallet";
+import { cn } from "@/lib/utils";
 import axios from "axios";
-import { Message } from "@/hooks/ChatContext";
 
-export default function ChatArea() {
+interface ChatWithMessages extends Chat {
+  messages?: Message[];
+}
+
+interface ChatAreaProps {
+  currentChat: ChatWithMessages | null;
+  setCurrentChat: (chat: ChatWithMessages | null) => void;
+}
+
+export function ChatArea({ currentChat, setCurrentChat }: ChatAreaProps) {
   const [inputValue, setInputValue] = useState<string>("");
-  const { clearMessages, setClearMessages, messages, setMessages } =
-    useChatContext();
-  const { processSwap, processTransfer, processPumpFunToken } =
-    useSolanaAgent();
+  const [isTyping, setIsTyping] = useState(false);
+  const chatWindowRef = useRef<HTMLDivElement>(null);
+  const { pubKey } = useWallet();
+  const { processSwap, processTransfer, processPumpFunToken } = useSolanaAgent();
+  const {
+    chats,
+    createChat,
+    sendMessage,
+    isLoading,
+  } = useChatHistory(pubKey || '');
 
+  // Scroll to bottom when messages change
   useEffect(() => {
-    if (clearMessages) {
-      setMessages([]);
-      setClearMessages(false);
-      console.log("Messages cleared!");
+    if (chatWindowRef.current) {
+      chatWindowRef.current.scrollTop = chatWindowRef.current.scrollHeight;
     }
-    console.log(messages);
-  }, [clearMessages]);
+  }, [currentChat?.messages]);
 
-  //function
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
-
-    // Add user's message to the chat
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      sender: "User",
-      content: inputValue,
-    };
-    setMessages((prev) => [...prev, userMessage]);
-    // Clear the input field
     setInputValue("");
+    setIsTyping(true);
 
     try {
+      // Create new chat if none exists
+      let chatId: string;
+      if (!currentChat) {
+        const newChat = await createChat();
+        setCurrentChat(newChat);
+        chatId = newChat.id;
+      } else {
+        chatId = currentChat.id;
+      }
+
+      // Send user message
+      const userMessage = await sendMessage(chatId, inputValue, 'User');
+      
+      // Update current chat with user message
+      if (currentChat) {
+        setCurrentChat({
+          ...currentChat,
+          messages: [...(currentChat.messages || []), userMessage]
+        });
+      }
+
+      // Get AI response
       const result = await axios.post("/api/generate", {
-        prompt: userMessage.content,
+        prompt: inputValue,
       });
 
-      console.log("LLM Response:", result.data.response);
-
       let signature;
-
-      //   Determine action based on the API response
       switch (result.data.response.interface) {
         case "regularPrompt":
-          setMessages((prev) => [...prev, result.data.response.message]);
+          const systemMessage = await sendMessage(
+            chatId,
+            result.data.response.message.content,
+            'System'
+          );
+          // Update current chat with system message
+          if (currentChat) {
+            setCurrentChat((prev: ChatWithMessages | null) => {
+              if (!prev) return currentChat;
+              return {
+                ...prev,
+                messages: [...(prev.messages || []), systemMessage],
+                updatedAt: new Date()
+              };
+            });
+          }
           break;
-        case "SwapData":
+        case "swap":
           signature = await processSwap(result.data.response);
           break;
-        case "TransferData":
+        case "transfer":
           signature = await processTransfer(result.data.response);
           break;
-        case "pumpFunTokenData":
+        case "pump":
           signature = await processPumpFunToken(result.data.response);
           break;
         default:
-          throw new Error("Please refine your prompt!!");
+          throw new Error("Please refine your prompt!");
       }
 
       if (signature) {
-        // Add system response to the chat
-        const systemMessage: Message = {
-          id: Date.now().toString(),
-          sender: "System",
-          content: `Action successful! Transaction signature: ${signature}`,
-        };
-        setMessages((prev) => [...prev, systemMessage]);
+        const signatureMessage = await sendMessage(
+          chatId,
+          `Transaction successful! Signature: ${signature}`,
+          'System',
+          { signature }
+        );
+        // Update current chat with signature message
+        if (currentChat) {
+          setCurrentChat((prev: ChatWithMessages | null) => {
+            if (!prev) return currentChat;
+            return {
+              ...prev,
+              messages: [...(prev.messages || []), signatureMessage],
+              updatedAt: new Date()
+            };
+          });
+        }
       }
     } catch (error: any) {
-      console.error("Error:", error);
-      const errorMessage: Message = {
-        id: Date.now().toString(),
-        sender: "System",
-        content: `Error: ${error.message || "An unknown error occurred."}`,
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      if (currentChat) {
+        const errorMessage = await sendMessage(
+          currentChat.id,
+          `Error: ${error.message}`,
+          'System'
+        );
+        // Update current chat with error message
+        setCurrentChat((prev: ChatWithMessages | null) => {
+          if (!prev) return currentChat;
+          return {
+            ...prev,
+            messages: [...(prev.messages || []), errorMessage],
+            updatedAt: new Date()
+          };
+        });
+      }
+    } finally {
+      setIsTyping(false);
     }
   };
 
   return (
-    <div className="flex w-[50vw] border flex-col rounded-lg p-4">
-      <h1 className="font-semibold tracking-tight text-2xl md:text-3xl text-white text-center mb-4">
-        Ask Kira to perform actions
-      </h1>
+    <div className="flex flex-col w-full h-[70vh] bg-gray-900/50 backdrop-blur-sm rounded-lg border border-gray-800 shadow-xl">
+      {/* Chat Header */}
+      <div className="p-4 border-b border-gray-800">
+        <h1 className="font-semibold tracking-tight text-xl text-white text-center">
+          TradeX AI Assistant
+        </h1>
+      </div>
 
-      {/* Chat Window */}
-      <div className="flex-1 overflow-y-auto rounded-lg p-4 shadow-inner">
-        {messages.map((message: Message) => (
+      {/* Chat Messages */}
+      <div 
+        ref={chatWindowRef}
+        className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent"
+      >
+        {currentChat?.messages?.map((message) => (
           <div
             key={message.id}
-            className={`flex mb-2 ${
-              message.sender === "User" ? "justify-end" : "justify-start"
-            }`}
+            className={cn(
+              "flex gap-2 items-start",
+              message.sender === "User" ? "flex-row-reverse" : "flex-row"
+            )}
           >
+            {/* Avatar */}
+            <div className={cn(
+              "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
+              message.sender === "User" ? "bg-blue-500" : "bg-gray-700"
+            )}>
+              {message.sender === "User" ? (
+                <User className="w-4 h-4 text-white" />
+              ) : (
+                <Bot className="w-4 h-4 text-white" />
+              )}
+            </div>
+
+            {/* Message */}
             <div
-              className={`px-4 py-2 rounded-lg text-sm shadow-lg max-w-[80%] ${
-                message.sender === "User"
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-700 text-white"
-              }`}
+              className={cn(
+                "px-4 py-2 rounded-lg text-sm max-w-[80%] shadow-lg animate-slide-in break-words",
+                message.sender === "User" 
+                  ? "bg-blue-500 text-white rounded-tr-none ml-auto" 
+                  : "bg-gray-800 text-white rounded-tl-none"
+              )}
+              style={{ overflowWrap: 'break-word' }}
             >
               {message.content}
             </div>
           </div>
         ))}
+        
+        {/* Typing indicator */}
+        {isTyping && (
+          <div className="flex gap-2 items-start">
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center">
+              <Bot className="w-4 h-4 text-white" />
+            </div>
+            <div className="px-4 py-2 rounded-lg text-sm bg-gray-800 text-white">
+              <div className="flex gap-1">
+                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" />
+                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:0.2s]" />
+                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:0.4s]" />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="mt-4 w-full flex items-center gap-2">
-        <input
-          type="text"
-          placeholder="Ask Kira to perform Solana actions..."
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              handleSendMessage();
-            }
-          }}
-          className="flex-1 bg-[#1a1a1a] text-white text-sm px-4 py-2 rounded-lg outline-none"
-        />
-        <button
-          onClick={handleSendMessage}
-          className="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 transition"
-        >
-          <ArrowUp className="w-5 h-5" />
-        </button>
+      {/* Input Area */}
+      <div className="p-4 border-t border-gray-800">
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            placeholder="Ask anything about Solana tokens..."
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage();
+              }
+            }}
+            className="flex-1 bg-gray-800 text-white text-sm px-4 py-3 rounded-lg outline-none border border-gray-700 focus:border-blue-500 transition-colors"
+          />
+          <button
+            onClick={handleSendMessage}
+            className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg transition-colors"
+          >
+            <Send className="w-5 h-5" />
+          </button>
+        </div>
       </div>
     </div>
   );

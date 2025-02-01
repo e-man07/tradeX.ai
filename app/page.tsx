@@ -38,10 +38,10 @@ export default function Home() {
         <Hero />
         <ShowcaseCards />
         <div className="mt-20"> {/* Add spacing between ShowcaseCards and HowItWorks */}
-          <HowItWorks />
+          {/* <HowItWorks /> */}
         </div>
-        <Features />
-        <UseCases />
+        {/* <Features /> */}
+        {/* <UseCases /> */}
         <CallToAction />
         <Footer />
       </div>

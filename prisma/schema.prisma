@@ -11,26 +11,35 @@ model User {
     id        String @id @default(auto()) @map("_id") @db.ObjectId
     email     String @unique
     password  String
-    pubKey    String
+    pubKey    String @unique
     secretKey String
     chats     Chat[] 
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 }
 
 enum Sender {
     User
     System
 }
-model Message  {
-   id       String @id @default(auto()) @map("_id") @db.ObjectId
-   sender   Sender 
-   content  String
-   chatId  String? @db.ObjectId 
-   chat    Chat?  @relation(fields: [chatId], references: [id])
+
+model Message {
+   id        String   @id @default(auto()) @map("_id") @db.ObjectId
+   sender    Sender 
+   content   String
+   chatId    String?  @db.ObjectId 
+   chat      Chat?    @relation(fields: [chatId], references: [id])
+   createdAt DateTime @default(now())
+   metadata  Json?    // For storing additional message data like transaction signatures
 }
 
 model Chat {
-    id  String @id @default(auto()) @map("_id") @db.ObjectId
-    messages Message[] 
-    user   User  @relation(fields: [userId], references: [id])
-    userId  String @db.ObjectId
+    id        String    @id @default(auto()) @map("_id") @db.ObjectId
+    title     String?   // Optional chat title
+    messages  Message[] 
+    user      User      @relation(fields: [userId], references: [id])
+    userId    String    @db.ObjectId
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    isArchived Boolean  @default(false)
 }

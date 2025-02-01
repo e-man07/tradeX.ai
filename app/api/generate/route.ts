@@ -140,7 +140,13 @@ function processResult(functionName: string, args: any): ActionResponse {
         token: args.token,
       };
     case "createToken":
-
+      return {
+        interface: "pumpFunTokenData",
+        tokenName: args.tokenName,
+        tokenTicker: args.tokenTicker,
+        tokenDescription: args.tokenDescription,
+        tokenImage: args.tokenImage,
+      };
     default:
       return {
         error: "Unknown function",
