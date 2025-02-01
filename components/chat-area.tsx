@@ -4,7 +4,6 @@ import { useSolanaAgent } from "@/hooks/useSolanaAgent";
 import { Bot, Send, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Message, Chat } from '@prisma/client';
-import { useChatHistory } from "@/hooks/useChatHistory";
 import { useWallet } from "@/hooks/useWallet";
 import { cn } from "@/lib/utils";
 import axios from "axios";
@@ -15,7 +14,7 @@ interface ChatWithMessages extends Chat {
 
 interface ChatAreaProps {
   currentChat: ChatWithMessages | null;
-  setCurrentChat: (chat: ChatWithMessages | null) => void;
+  setCurrentChat: React.Dispatch<React.SetStateAction<ChatWithMessages | null>>;
 }
 
 export function ChatArea({ currentChat, setCurrentChat }: ChatAreaProps) {
@@ -24,12 +23,6 @@ export function ChatArea({ currentChat, setCurrentChat }: ChatAreaProps) {
   const chatWindowRef = useRef<HTMLDivElement>(null);
   const { pubKey } = useWallet();
   const { processSwap, processTransfer, processPumpFunToken } = useSolanaAgent();
-  const {
-    chats,
-    createChat,
-    sendMessage,
-    isLoading,
-  } = useChatHistory(pubKey || '');
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -38,6 +31,18 @@ export function ChatArea({ currentChat, setCurrentChat }: ChatAreaProps) {
     }
   }, [currentChat?.messages]);
 
+  const createNewMessage = (content: string, sender: 'User' | 'System', metadata?: any): Message => {
+    return {
+      id: Math.random().toString(36).substr(2, 9), // Simple ID generation
+      content,
+      sender,
+      chatId: currentChat?.id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...metadata
+    };
+  };
+
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
     setInputValue("");
@@ -45,25 +50,28 @@ export function ChatArea({ currentChat, setCurrentChat }: ChatAreaProps) {
 
     try {
       // Create new chat if none exists
-      let chatId: string;
       if (!currentChat) {
-        const newChat = await createChat();
+        const newChat: ChatWithMessages = {
+          id: Math.random().toString(36).substr(2, 9),
+          title: null,
+          userId: pubKey || '',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          isArchived: false,
+          messages: []
+        };
         setCurrentChat(newChat);
-        chatId = newChat.id;
-      } else {
-        chatId = currentChat.id;
       }
 
-      // Send user message
-      const userMessage = await sendMessage(chatId, inputValue, 'User');
-      
-      // Update current chat with user message
-      if (currentChat) {
-        setCurrentChat({
-          ...currentChat,
-          messages: [...(currentChat.messages || []), userMessage]
-        });
-      }
+      // Add user message
+      const userMessage = createNewMessage(inputValue, 'User');
+      setCurrentChat((prev: ChatWithMessages | null) => {
+        if (!prev) return { messages: [userMessage], createdAt: new Date(), updatedAt: new Date(), isArchived: false } as ChatWithMessages;
+        return { 
+          ...prev, 
+          messages: [...(prev.messages || []), userMessage]
+        } as ChatWithMessages;
+      });
 
       // Get AI response
       const result = await axios.post("/api/generate", {
@@ -73,72 +81,52 @@ export function ChatArea({ currentChat, setCurrentChat }: ChatAreaProps) {
       let signature;
       switch (result.data.response.interface) {
         case "regularPrompt":
-          const systemMessage = await sendMessage(
-            chatId,
-            result.data.response.message.content,
-            'System'
-          );
-          // Update current chat with system message
-          if (currentChat) {
-            setCurrentChat((prev: ChatWithMessages | null) => {
-              if (!prev) return currentChat;
-              return {
-                ...prev,
-                messages: [...(prev.messages || []), systemMessage],
-                updatedAt: new Date()
-              };
-            });
-          }
+          const systemMessage = createNewMessage(result.data.response.message.content, 'System');
+          setCurrentChat((prev: ChatWithMessages | null) => {
+            if (!prev) return { messages: [systemMessage], createdAt: new Date(), updatedAt: new Date(), isArchived: false } as ChatWithMessages;
+            return { 
+              ...prev, 
+              messages: [...(prev.messages || []), systemMessage]
+            } as ChatWithMessages;
+          });
           break;
-        case "swap":
+        case "SwapData":
           signature = await processSwap(result.data.response);
           break;
-        case "transfer":
+        case "TransferData":
           signature = await processTransfer(result.data.response);
           break;
-        case "pump":
+        case "pumpFunTokenData":
           signature = await processPumpFunToken(result.data.response);
           break;
         default:
+          console.error("Unexpected interface:", result.data.response.interface);
           throw new Error("Please refine your prompt!");
       }
 
       if (signature) {
-        const signatureMessage = await sendMessage(
-          chatId,
+        const signatureMessage = createNewMessage(
           `Transaction successful! Signature: ${signature}`,
           'System',
           { signature }
         );
-        // Update current chat with signature message
-        if (currentChat) {
-          setCurrentChat((prev: ChatWithMessages | null) => {
-            if (!prev) return currentChat;
-            return {
-              ...prev,
-              messages: [...(prev.messages || []), signatureMessage],
-              updatedAt: new Date()
-            };
-          });
-        }
-      }
-    } catch (error: any) {
-      if (currentChat) {
-        const errorMessage = await sendMessage(
-          currentChat.id,
-          `Error: ${error.message}`,
-          'System'
-        );
-        // Update current chat with error message
         setCurrentChat((prev: ChatWithMessages | null) => {
-          if (!prev) return currentChat;
-          return {
-            ...prev,
-            messages: [...(prev.messages || []), errorMessage],
-            updatedAt: new Date()
-          };
+          if (!prev) return { messages: [signatureMessage], createdAt: new Date(), updatedAt: new Date(), isArchived: false } as ChatWithMessages;
+          return { 
+            ...prev, 
+            messages: [...(prev.messages || []), signatureMessage]
+          } as ChatWithMessages;
         });
       }
+    } catch (error: any) {
+      const errorMessage = createNewMessage(`Error: ${error.message}`, 'System');
+      setCurrentChat((prev: ChatWithMessages | null) => {
+        if (!prev) return { messages: [errorMessage], createdAt: new Date(), updatedAt: new Date(), isArchived: false } as ChatWithMessages;
+        return { 
+          ...prev, 
+          messages: [...(prev.messages || []), errorMessage]
+        } as ChatWithMessages;
+      });
     } finally {
       setIsTyping(false);
     }
@@ -212,7 +200,13 @@ export function ChatArea({ currentChat, setCurrentChat }: ChatAreaProps) {
 
       {/* Input Area */}
       <div className="p-4 border-t border-gray-800">
-        <div className="flex items-center gap-2">
+        <form 
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSendMessage();
+          }}
+          className="flex items-center gap-2"
+        >
           <input
             type="text"
             placeholder="Ask anything about Solana tokens..."
@@ -227,12 +221,12 @@ export function ChatArea({ currentChat, setCurrentChat }: ChatAreaProps) {
             className="flex-1 bg-gray-800 text-white text-sm px-4 py-3 rounded-lg outline-none border border-gray-700 focus:border-blue-500 transition-colors"
           />
           <button
-            onClick={handleSendMessage}
+            type="submit"
             className="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg transition-colors"
           >
             <Send className="w-5 h-5" />
           </button>
-        </div>
+        </form>
       </div>
     </div>
   );
