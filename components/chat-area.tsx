@@ -57,7 +57,6 @@ export function ChatArea({ currentChat, setCurrentChat }: ChatAreaProps) {
           userId: pubKey || '',
           createdAt: new Date(),
           updatedAt: new Date(),
-          isArchived: false,
           messages: []
         };
         setCurrentChat(newChat);
