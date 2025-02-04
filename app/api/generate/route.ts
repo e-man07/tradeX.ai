@@ -29,16 +29,45 @@ interface PumpFunTokenData {
   tokenImage: string;
 }
 
+interface NFTMintData {
+  interface: "mintNFT";
+  type: "mintNFT";
+  data: {
+    name: string;
+    description: string;
+    image: string;
+    collectionMint: string;
+  };
+}
+
+interface CreateCollectionData {
+  interface: "createCollection";
+  type: "createCollection";
+  data: {
+    name: string;
+    symbol: string;
+    description: string;
+    image: string;
+    royaltyBasisPoints?: number;
+    creators?: Array<{
+      address: string;
+      percentage: number;
+    }>;
+  };
+}
+
 type ActionResponse =
   | SwapData
   | TransferData
   | PumpFunTokenData
+  | NFTMintData
+  | CreateCollectionData
   | {
       error: string;
       message: string;
     };
 
-// Initialize OpenAI client
+// Initialize Gemini client
 const genAI = new GoogleGenerativeAI(`${process.env.GEMINI_API_KEY}`);
 
 // Define available functions
@@ -115,6 +144,81 @@ const createTokenFunctionDeclaration = {
   },
 };
 
+const mintNFTFunctionDeclaration = {
+  name: "mintNFT",
+  parameters: {
+    type: "OBJECT",
+    description: "Mint a new NFT in an existing collection.",
+    properties: {
+      name: {
+        type: "STRING",
+        description: "The name of the NFT.",
+      },
+      description: {
+        type: "STRING",
+        description: "A description of the NFT.",
+      },
+      image: {
+        type: "STRING",
+        description: "The URL or path to the NFT image.",
+      },
+      collectionMint: {
+        type: "STRING",
+        description: "The Solana address of the collection's master NFT.",
+      },
+    },
+    required: ["name", "description", "image", "collectionMint"],
+  },
+};
+
+const createCollectionFunctionDeclaration = {
+  name: "createCollection",
+  description: "Create a new NFT collection on Solana",
+  parameters: {
+    type: "object",
+    properties: {
+      name: {
+        type: "string",
+        description: "Name of the collection (max 32 chars)",
+      },
+      symbol: {
+        type: "string",
+        description: "Symbol for the collection (3-5 characters)",
+      },
+      description: {
+        type: "string",
+        description: "Description of the collection",
+      },
+      image: {
+        type: "string",
+        description: "URL or uploaded image for the collection",
+      },
+      royaltyBasisPoints: {
+        type: "number",
+        description: "Royalty percentage (e.g., 500 = 5%)",
+      },
+      creators: {
+        type: "array",
+        description: "List of creators with percentages",
+        items: {
+          type: "object",
+          properties: {
+            address: {
+              type: "string",
+              description: "Valid Solana address",
+            },
+            percentage: {
+              type: "number",
+              description: "Percentage share (0-100)",
+            },
+          },
+        },
+      },
+    },
+    required: ["name", "symbol", "description", "image"],
+  },
+};
+
 // Solana address validation helper
 const isSolanaAddress = (address: string): boolean => {
   // Base58 check and length validation for Solana addresses
@@ -147,11 +251,41 @@ function processResult(functionName: string, args: any): ActionResponse {
         tokenDescription: args.tokenDescription,
         tokenImage: args.tokenImage,
       };
-    default:
+    case "mintNFT":
+      if (!isSolanaAddress(args.collectionMint)) {
+        throw new Error("Invalid collection mint address");
+      }
       return {
-        error: "Unknown function",
-        message: "The function called is not recognized",
+        interface: "mintNFT",
+        type: "mintNFT",
+        data: {
+          name: args.name,
+          description: args.description,
+          image: args.image,
+          collectionMint: args.collectionMint,
+        },
       };
+    case "createCollection":
+        if (!args.name || !args.symbol || !args.description || !args.image) {
+          throw new Error("Missing required collection parameters");
+        }
+        if (args.symbol.length > 5) {
+          throw new Error("Collection symbol must be 3-5 characters");
+        }
+        return {
+          interface: "createCollection",
+          type: "createCollection",
+          data: {
+            name: args.name,
+            symbol: args.symbol,
+            description: args.description,
+            image: args.image,
+            royaltyBasisPoints: args.royaltyBasisPoints,
+            creators: args.creators,
+          },
+        };
+    default:
+        throw new Error(`Unknown function: ${functionName}`);
   }
 }
 
@@ -178,17 +312,25 @@ const functions: Record<string, Function> = {
       tokenImage,
     });
   },
+  mintNFT: async ({ type, data }: any) => {
+    return processResult("mint_nft", { type, data });
+  },
+  
+  createCollection: async ({ name, symbol, description, image, royaltyBasisPoints, creators }: any) => {
+    return processResult("create_collection", { name, symbol, description, image, royaltyBasisPoints, creators });
+  },
 };
 
 export const POST = async (req: Request): Promise<Response> => {
   let formattedResponse: ActionResponse = {
     error: "No action detected",
     message:
-      "Please use keywords like 'swap', 'send', or 'create' with appropriate details."+
+      "Please use keywords like 'swap', 'send', 'create', or 'mint' with appropriate details.\n" +
       "Please specify what you'd like to do on Solana blockchain. You can:\n" +
       "1. Swap tokens (e.g., 'swap 1 SOL to USDC' or 'exchange 100 USDC for RAY')\n" +
       "2. Transfer tokens (e.g., 'send 0.5 SOL to <solana-address>' or 'transfer 100 USDC to <solana-address>')\n" +
-      "3. Create a new SPL token (e.g., 'create token named MyToken with symbol MTK')"
+      "3. Create a new SPL token (e.g., 'create token named MyToken with symbol MTK')\n" +
+      "4. Mint an NFT (e.g., 'mint NFT named MyNFT with description \"My awesome NFT\" in collection <collection-address>')",
   };
 
   try {
@@ -215,6 +357,8 @@ export const POST = async (req: Request): Promise<Response> => {
             swapTokenFunctionDeclaration,
             transferTokenFunctionDeclaration,
             createTokenFunctionDeclaration,
+            mintNFTFunctionDeclaration,
+            createCollectionFunctionDeclaration,
           ],
         } as FunctionDeclarationsTool,
       ],
@@ -227,6 +371,14 @@ export const POST = async (req: Request): Promise<Response> => {
           parts: [
             {
               text: `You are a Solana blockchain assistant that helps users with token operations. Please interpret user requests and execute the appropriate action:
+
+          For COLLECTIONS:
+          - "create a collection named Art Collection with symbol ART"
+          - "create NFT collection Gaming Items with symbol GAME"
+
+          For NFT MINTING:
+          - "mint NFT named CryptoArt #1 in collection <collection-address>"
+          - "create NFT Pixel Warrior in collection <collection-address>"
 
           For SWAPS on Solana:
           - Handle common Solana tokens: SOL, USDC, RAY, SRM, etc.
@@ -246,6 +398,12 @@ export const POST = async (req: Request): Promise<Response> => {
           - Support Metaplex metadata standards
           - Handle token image storage on Arweave
 
+          For NFT MINTING:
+          - Guide users through NFT minting process
+          - Collect required metadata for NFT
+          - Support Metaplex metadata standards
+          - Handle NFT image storage on Arweave
+
           Always validate:
           - Solana wallet addresses
           - Token existence on Solana
@@ -255,7 +413,6 @@ export const POST = async (req: Request): Promise<Response> => {
         },
       ],
     });
-    
 
     try {
       console.log("trying to do normal conversations before!");
@@ -312,7 +469,7 @@ export const POST = async (req: Request): Promise<Response> => {
           formattedResponse = {
             error: "No action detected",
             message:
-              "Please use keywords like 'swap', 'send', or 'create' with appropriate details.",
+              "Please use keywords like 'swap', 'send', 'create', or 'mint' with appropriate details.",
           };
         }
       }

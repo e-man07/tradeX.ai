@@ -22,11 +22,11 @@ export function ChatArea({ currentChat, setCurrentChat }: ChatAreaProps) {
   const [isTyping, setIsTyping] = useState(false);
   const chatWindowRef = useRef<HTMLDivElement>(null);
   const { pubKey } = useWallet();
-  const { processSwap, processTransfer, processPumpFunToken } = useSolanaAgent();
+  const { processSwap, processTransfer, processPumpFunToken, processNFTMint, processcreateCollection } = useSolanaAgent();
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    if (chatWindowRef.current) {
+    if (chatWindowRef.current) {  
       chatWindowRef.current.scrollTop = chatWindowRef.current.scrollHeight;
     }
   }, [currentChat?.messages]);
@@ -99,6 +99,12 @@ export function ChatArea({ currentChat, setCurrentChat }: ChatAreaProps) {
         case "pumpFunTokenData":
           signature = await processPumpFunToken(result.data.response);
           break;
+        case "mintNFT":
+          await handleAction(result.data.response);
+          break;
+        case "createCollection":
+          await handleCreateCollection(result.data.response);
+          break;
         default:
           console.error("Unexpected interface:", result.data.response.interface);
           throw new Error("Please refine your prompt!");
@@ -132,12 +138,96 @@ export function ChatArea({ currentChat, setCurrentChat }: ChatAreaProps) {
     }
   };
 
+  const handleAction = async (action: any) => {
+    try {
+      let signature = "";
+      let tokenAddress = "";
+      let metadataURI = "";
+
+      switch (action.type) {
+        case "mintNFT": {
+          const { name, description, image, collectionMint } = action.data;
+          const result = await processNFTMint({
+            name,
+            description,
+            image,
+            collectionMint
+          });
+          
+          // Add success message
+          const successMessage = createNewMessage(
+            `✅ NFT minted successfully!\nMint Address: ${result.mint.toString()}\nMetadata Address: ${result.metadata.toString()}`,
+            'System'
+          );
+          
+          setCurrentChat((prev: ChatWithMessages | null) => {
+            if (!prev) return null;
+            return {
+              ...prev,
+              messages: [...(prev.messages || []), successMessage]
+            };
+          });
+          break;
+        }
+        default:
+          console.error("Unexpected action type:", action.type);
+          throw new Error("Please refine your prompt!");
+      }
+    } catch (error: any) {
+      const errorMessage = createNewMessage(`Error: ${error.message}`, 'System');
+      setCurrentChat((prev: ChatWithMessages | null) => {
+        if (!prev) return { messages: [errorMessage], createdAt: new Date(), updatedAt: new Date(), isArchived: false } as ChatWithMessages;
+        return { 
+          ...prev, 
+          messages: [...(prev.messages || []), errorMessage]
+        } as ChatWithMessages;
+      });
+    }
+  };
+
+  const handleCreateCollection = async (action: any) => {
+    try {
+      const collectionData = action.data;
+      const result = await processcreateCollection({
+        name: collectionData.name,
+        symbol: collectionData.symbol,
+        description: collectionData.description,
+        image: collectionData.image,
+        royaltyBasisPoints: collectionData.royaltyBasisPoints,
+        creators: collectionData.creators
+      });
+      
+      // Add success message with collection address
+      const successMessage = createNewMessage(
+        `Successfully created collection "${collectionData.name}"!\nCollection Address: ${result.collectionAddress.toString()}\nTransaction: ${result.signature}`,
+        'System'
+      );
+      
+      setCurrentChat((prev: ChatWithMessages | null) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          messages: [...(prev.messages || []), successMessage]
+        };
+      });
+    } catch (error: any) {
+      const errorMessage = createNewMessage(`Error: ${error.message}`, 'System');
+      setCurrentChat((prev: ChatWithMessages | null) => {
+        if (!prev) return { messages: [errorMessage], createdAt: new Date(), updatedAt: new Date(), isArchived: false } as ChatWithMessages;
+        return { 
+          ...prev, 
+          messages: [...(prev.messages || []), errorMessage]
+        } as ChatWithMessages;
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col w-full h-[70vh] bg-gray-900/50 backdrop-blur-sm rounded-lg border border-gray-800 shadow-xl">
       {/* Chat Header */}
       <div className="p-4 border-b border-gray-800">
         <h1 className="font-semibold tracking-tight text-xl text-white text-center">
-          TradeX AI Assistant
+          tradeX AI Assistant
         </h1>
       </div>
 

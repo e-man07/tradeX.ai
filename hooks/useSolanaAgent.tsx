@@ -6,11 +6,14 @@ import {
   launchPumpFunToken,
   trade,
   transfer,
+  mintCollectionNFT,
+  deploy_collection,
 } from "solana-agent-kit/dist/tools";
 import { useBalance } from "./useBalance";
 import { createContext, useContext } from "react";
 import { PublicKey } from "@solana/web3.js";
 import { TokenListProvider } from "@solana/spl-token-registry";
+import bs58 from 'bs58';
 
 interface SwapData {
   from: string;
@@ -29,6 +32,25 @@ interface pumpFunTokenData {
   tokenDescription: string;
   tokenImage: any;
 }
+interface NFTMintData {
+  name: string;
+  description: string;
+  image: any;
+  collectionMint: string;
+  symbol?: string;
+  attributes?: Array<{ trait_type: string; value: string }>;
+}
+interface CollectionData {
+  name: string;
+  symbol: string;
+  description: string;
+  image: string | File | Uint8Array;
+  royaltyBasisPoints?: number;
+  creators?: Array<{
+    address: string;
+    percentage: number;
+  }>;
+}
 
 interface AgentContextProps {
   processSwap: (data: SwapData) => Promise<string>;
@@ -36,6 +58,9 @@ interface AgentContextProps {
   processPumpFunToken: (
     data: pumpFunTokenData
   ) => Promise<{ signature: string; tokenAddress: string; metadataURI: any }>;
+  processNFTMint: (data: NFTMintData) => Promise<{mint: PublicKey; metadata: PublicKey}>;
+  processcreateCollection: (data: CollectionData) => Promise<{ collectionAddress: PublicKey; signature: string }>;
+
 }
 
 const AgentContext = createContext<AgentContextProps | null>(null);
@@ -98,7 +123,6 @@ export const AgentProvider: React.FC<{ children: React.ReactNode }> = ({
     `${secKey}`,
     `https://devnet.helius-rpc.com?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`,
     `${process.env.GEMINI_API_KEY}`,
-    
   );
 
   //send transaction
@@ -256,11 +280,183 @@ export const AgentProvider: React.FC<{ children: React.ReactNode }> = ({
       console.error("Error in processPumpFunToken:", error);
       throw new Error(error.message || "Failed to create token");
     }
+
+    
+  };
+
+  const processNFTMint = async (
+    data: NFTMintData
+  ): Promise<{ mint: PublicKey; metadata: PublicKey }> => {
+    if (!keyPair) {
+      throw new Error("Keypair is not initialized.");
+    }
+  
+    const { name, description, image, collectionMint, symbol, attributes } = data;
+  
+    try {
+      // Handle image upload
+      let imageFile: File;
+      if (typeof image === "string") {
+        const imageResponse = await fetch(image);
+        const imageBlob = await imageResponse.blob();
+        imageFile = new File([imageBlob], "nft_image.png", { type: "image/png" });
+      } else if (image instanceof File) {
+        imageFile = image;
+      } else {
+        throw new Error("Invalid image file.");
+      }
+  
+      // Create form data for IPFS upload
+      const formData = new FormData();
+      
+      // Prepare metadata in Solana's NFT standard format
+      const metadata = {
+        name,
+        symbol: symbol || "TRD", // Adding required symbol property
+        description,
+        image: "", // Will be updated with IPFS URL
+        attributes: attributes || [],
+        properties: {
+          files: [{ type: "image/png", uri: "" }],
+          category: "image",
+          creators: [{ address: keyPair.publicKey.toString(), share: 100 }]
+        }
+      };
+  
+      formData.append("file", imageFile);
+      formData.append("name", name);
+      formData.append("description", description);
+  
+      // Upload image to IPFS first
+      const imageResponse = await fetch("/api/ipfs", {
+        method: "POST",
+        body: formData,
+      });
+  
+      if (!imageResponse.ok) {
+        throw new Error("Failed to upload image to IPFS");
+      }
+  
+      const imageData = await imageResponse.json();
+      
+      // Update metadata with IPFS image URL
+      metadata.image = imageData.uri;
+      metadata.properties.files[0].uri = imageData.uri;
+  
+      // Upload complete metadata to IPFS
+      const metadataResponse = await fetch("/api/ipfs", {
+        method: "POST",
+        body: JSON.stringify(metadata),
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+  
+      if (!metadataResponse.ok) {
+        throw new Error("Failed to upload metadata to IPFS");
+      }
+  
+      const metadataResult = await metadataResponse.json();
+  
+      // Now mint the NFT using the metadata URI
+      const result = await mintCollectionNFT(
+        agent,
+        new PublicKey(collectionMint),
+        {
+          name,
+          symbol: "TRD", // Adding required symbol property
+          uri: metadataResult.uri
+        },
+        keyPair.publicKey
+      );
+  
+      return result;
+    } catch (error: any) {
+      console.error("Error in processNFTMint:", error);
+      throw new Error(error.message || "Failed to mint NFT");
+    }
+  };
+
+  const processcreateCollection = async (
+    data: CollectionData
+  ): Promise<{ collectionAddress: PublicKey; signature: string }> => {
+    if (!keyPair) {
+      throw new Error("Keypair is not initialized.");
+    }
+  
+    try {
+      // Handle image upload
+      let imageFile: File;
+      if (typeof data.image === "string") {
+        const imageResponse = await fetch(data.image);
+        const imageBlob = await imageResponse.blob();
+        imageFile = new File([imageBlob], "collection_image.png", { 
+          type: "image/png" 
+        });
+      } else if (data.image instanceof File) {
+        imageFile = data.image;
+      } else if (data.image instanceof Uint8Array) {
+        imageFile = new File([data.image], "collection_image.png", {
+          type: "image/png",
+        });
+      } else {
+        throw new Error("Invalid image format");
+      }
+  
+      // Upload image to IPFS
+      const imageFormData = new FormData();
+      imageFormData.append("file", imageFile);
+      const imageResponse = await fetch("/api/ipfs", {
+        method: "POST",
+        body: imageFormData,
+      });
+      const imageData = await imageResponse.json();
+  
+      // Create collection metadata
+      const metadata = {
+        name: data.name,
+        symbol: data.symbol,
+        description: data.description,
+        image: imageData.uri,
+        properties: {
+          files: [{ type: "image/png", uri: imageData.uri }],
+          category: "image",
+        },
+      };
+  
+      // Upload metadata to IPFS
+      const metadataResponse = await fetch("/api/ipfs", {
+        method: "POST",
+        body: JSON.stringify(metadata),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const metadataResult = await metadataResponse.json();
+  
+      // Deploy collection with metadata URI
+      const result = await deploy_collection(agent, {
+        name: data.name,
+        uri: metadataResult.uri, // Use metadata URI here
+        royaltyBasisPoints: data.royaltyBasisPoints || 500,
+        creators: data.creators || [
+          { address: keyPair.publicKey.toString(), percentage: 100 }
+        ]
+      });
+  
+      return {
+        collectionAddress: result.collectionAddress,
+        signature: bs58.encode(result.signature)
+      };
+    } catch (error: any) {
+      console.error("Error in createCollection:", error);
+      throw new Error(error.message || "Failed to create collection");
+    }
   };
   
   return (
     <AgentContext.Provider
-      value={{ processSwap, processTransfer, processPumpFunToken }}
+      value={{ processSwap, processTransfer, processPumpFunToken, processNFTMint, processcreateCollection }}
     >
       {children}
     </AgentContext.Provider>

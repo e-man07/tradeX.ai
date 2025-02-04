@@ -47,7 +47,7 @@ export default function Chat() {
                   <BreadcrumbItem className="hidden md:block">
                     <BreadcrumbLink href="#" className="flex items-center gap-2">
                       <Sparkles className="h-4 w-4 text-yellow-400" />
-                      TradeX AI Assistant
+                      tradeX AI Assistant
                     </BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator className="hidden md:block" />

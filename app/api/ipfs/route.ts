@@ -2,23 +2,29 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
-    const formData = await req.formData();
-    const nativeFormData = new FormData();
+    const contentType = req.headers.get("content-type") || "";
+    let nativeFormData = new FormData();
 
-    // Process each field in the form data
-    for (const [key, value] of formData.entries()) {
-      console.log(`Processing form field: ${key}, type: ${typeof value}`);
-      
-      if (value instanceof File) {
-        console.log(`File details for ${key}:`, {
-          name: value.name,
-          type: value.type,
-          size: value.size
-        });
-        
-        nativeFormData.append(key, value, value.name);
-      } else {
-        nativeFormData.append(key, value);
+    if (contentType.includes("application/json")) {
+      // Handle JSON metadata
+      const jsonData = await req.json();
+      for (const [key, value] of Object.entries(jsonData)) {
+        nativeFormData.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
+      }
+    } else {
+      // Handle FormData (file upload)
+      const formData = await req.formData();
+      for (const [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(`File details for ${key}:`, {
+            name: value.name,
+            type: value.type,
+            size: value.size
+          });
+          nativeFormData.append(key, value, value.name);
+        } else {
+          nativeFormData.append(key, value);
+        }
       }
     }
 
