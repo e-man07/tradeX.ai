@@ -58,7 +58,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={[{ name: "tradeX.ai" }]} />
+        <TeamSwitcher teams={[{ name: "tradeX" }]} />
       </SidebarHeader>
 
       <SidebarContent>
