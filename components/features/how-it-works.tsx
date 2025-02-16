@@ -28,7 +28,7 @@ export default function HowItWorks() {
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600">How It Works</h2>
           <p className="text-gray-400 max-w-2xl mx-auto">
-            AI-powered Web3 assistant that simplifies Solana transactions with natural language.
+            AI Agent that simplifies Solana transactions with natural language.
           </p>
         </div>
         

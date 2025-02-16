@@ -22,13 +22,13 @@ export default function Hero() {
           <p className="text-emerald-400 text-sm md:text-base">AI-Powered On-Chain Actions for Solana</p>
 
           <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-            The Ultimate Bot
+            The Ultimate Agent
             <br />
-            for On-Chain Actions
+            for On-Chain Operations
           </h1>
 
           <p className="text-gray-400 text-lg md:text-xl">
-            Transfer, swap, mint NFTs, and create SPL tokens seamlessly—just give prompts, and let AI handle the on-chain interactions for you.
+            Transfer, swap, mint NFTs, and create SPL tokens seamlessly—just give prompts, and let AI Agent handle the on-chain interactions for you.
           </p>
 
           <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
