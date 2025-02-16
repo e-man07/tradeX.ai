@@ -19,8 +19,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "tradeX.ai",
-  description: "AI-Powered Token Management Platform",
+  title: "tradeX",
+  description: "AI-Powered On-Chain Actions for Solana",
 };
 
 export default function RootLayout({
