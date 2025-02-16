@@ -28,11 +28,10 @@ export default function Hero() {
           </h1>
 
           <p className="text-gray-400 text-lg md:text-xl">
-           Transfer, swap, mint NFTs, and create SPL tokens seamlessly—just give prompts, and let AI handle the on-chain interactions for you.
-
+            Transfer, swap, mint NFTs, and create SPL tokens seamlessly—just give prompts, and let AI handle the on-chain interactions for you.
           </p>
 
-          <div className="pt-4 space-x-4">
+          <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button
               size="lg"
               className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white px-8 py-6 text-lg"
