@@ -26,24 +26,24 @@ export default function Home() {
       <div className="relative z-10">
         {/* Header */}
         <header className="container mx-auto px-4 py-6 flex justify-between items-center">
-          <div className="text-xl font-bold">tradeX.ai</div>
-          <Button 
+          <div className="text-xl font-bold">tradeX</div>
+          {/* <Button 
             className="bg-purple-600 hover:bg-purple-700 text-white"
             size="lg"
           >
             Connect Wallet
-          </Button>
+          </Button> */}
         </header>
 
         <Hero />
-        <ShowcaseCards />
+        {/* <ShowcaseCards /> */}
         <div className="mt-20"> {/* Add spacing between ShowcaseCards and HowItWorks */}
-          {/* <HowItWorks /> */}
+           <HowItWorks /> 
         </div>
-        {/* <Features /> */}
-        {/* <UseCases /> */}
+         <Features /> 
+       <UseCases /> 
         <CallToAction />
-        <Footer />
+        <Footer /> 
       </div>
     </main>
   )

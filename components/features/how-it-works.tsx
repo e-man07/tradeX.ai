@@ -1,23 +1,23 @@
 'use client'
 import { Card, CardContent } from '@/components/ui/card'
-import { RocketIcon, Share2Icon, Trophy } from 'lucide-react'
+import { Wallet, Send, Sparkles } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 const steps = [
   {
-    title: 'Set up your giveaway',
-    description: 'Define rules and prizes with our AI assistant',
-    icon: RocketIcon,
+    title: 'Create a Wallet Instantly',
+    description: 'Generate a secure, non-custodial Solana web-based wallet in seconds using AI.',
+    icon: Wallet,
   },
   {
-    title: 'Share the Blink link',
-    description: 'Post on Twitter for maximum reach',
-    icon: Share2Icon,
+    title: 'Send & Receive SOL via Prompts',
+    description: 'Easily transfer SOL to any wallet by just describing the transaction.',
+    icon: Send,
   },
   {
-    title: 'AI selects winners',
-    description: 'Fair selection with blockchain verification',
-    icon: Trophy,
+    title: 'Mint NFTs & Create Tokens',
+    description: 'Use simple prompts to mint NFTs or launch your own tokens on Solana.',
+    icon: Sparkles,
   },
 ]
 
@@ -28,7 +28,7 @@ export default function HowItWorks() {
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600">How It Works</h2>
           <p className="text-gray-400 max-w-2xl mx-auto">
-            Three simple steps to create and manage your blockchain-verified giveaways
+            AI-powered Web3 assistant that simplifies Solana transactions with natural language.
           </p>
         </div>
         
@@ -58,4 +58,3 @@ export default function HowItWorks() {
     </section>
   )
 }
-

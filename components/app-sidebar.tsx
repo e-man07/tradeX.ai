@@ -46,14 +46,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   //TODO: implement the logic of saving the data here
   const handleNewChat = () => {
-    const userId = window.localStorage.getItem("userId") as string;
-    if (!clearMessages) {
-      saveChat(userId, messages);
-      setClearMessages(true);
-      console.log("New chat initiated. All messages cleared! ");
-    }
+    // Simply clear the messages array
+    setMessages([]);
+    
+    // Optionally reset any other related state
+    setClearMessages(false);
+    
+    console.log("New chat initiated. Messages cleared!");
   };
-
+  
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>

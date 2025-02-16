@@ -1,28 +1,28 @@
 'use client'
 
 import { Card, CardContent } from '@/components/ui/card'
-import { BrainCircuitIcon, ShieldCheckIcon, UsersIcon, SparklesIcon } from 'lucide-react'
+import { BrainCircuitIcon, ShieldCheckIcon, SendIcon, SparklesIcon } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 const features = [
   {
-    title: 'AI-Powered Automation',
-    description: 'Smart tools that handle participant verification and winner selection',
+    title: 'AI-Driven Transactions',
+    description: 'Send SOL, swap tokens, and mint NFTs with simple natural language commands.',
     icon: BrainCircuitIcon,
   },
   {
-    title: 'Blockchain Transparency',
-    description: 'Every giveaway is verified and recorded on the blockchain',
+    title: 'Secure & Non-Custodial',
+    description: 'Wallets are created instantly with full user control—no third-party access.',
     icon: ShieldCheckIcon,
   },
   {
-    title: 'Community Engagement',
-    description: 'Build and grow your community with engaging giveaways',
-    icon: UsersIcon,
+    title: 'Effortless Token Management',
+    description: 'Easily create and manage Solana tokens without writing a single line of code.',
+    icon: SendIcon,
   },
   {
-    title: 'Smart Analytics',
-    description: 'Track performance and optimize your giveaway strategy',
+    title: 'Seamless Web3 Experience',
+    description: 'AI simplifies your interaction with Solana, making blockchain accessible to all.',
     icon: SparklesIcon,
   },
 ]
@@ -34,7 +34,7 @@ export default function Features() {
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">Why Choose Us?</h2>
           <p className="text-gray-400 max-w-2xl mx-auto">
-            Powerful features to make your giveaways successful and trustworthy
+            AI-powered Web3 assistant that makes Solana transactions effortless.
           </p>
         </div>
 
@@ -64,4 +64,3 @@ export default function Features() {
     </section>
   )
 }
-

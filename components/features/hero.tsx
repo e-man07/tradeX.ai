@@ -19,17 +19,17 @@ export default function Hero() {
       {isLoading && <Loader />}
       <section className="container mx-auto px-4 pt-20 pb-32 text-center">
         <div className="max-w-3xl mx-auto space-y-6">
-          <p className="text-emerald-400 text-sm md:text-base">AI-Powered Solana Token Management</p>
+          <p className="text-emerald-400 text-sm md:text-base">AI-Powered On-Chain Actions for Solana</p>
 
           <h1 className="text-4xl md:text-6xl font-bold leading-tight">
             The Ultimate Bot
             <br />
-            for Token Management
+            for On-Chain Actions
           </h1>
 
           <p className="text-gray-400 text-lg md:text-xl">
-            Effortlessly manage your Solana tokens with the power of AI. Transfer, swap, and create SPL tokens with a
-            seamless and transparent experience.
+           Transfer, swap, mint NFTs, and create SPL tokens seamlessly—just give prompts, and let AI handle the on-chain interactions for you.
+
           </p>
 
           <div className="pt-4 space-x-4">

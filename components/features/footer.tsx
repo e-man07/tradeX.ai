@@ -8,9 +8,10 @@ export default function Footer() {
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-4">
-            <h3 className="text-xl font-bold">tradeX.ai</h3>
+            <h3 className="text-xl font-bold">tradeX</h3>
             <p className="text-gray-400">
-              AI-Powered Token Management Platform
+            AI-Driven On-Chain Actions for 
+            Solana
             </p>
             <div className="flex space-x-4">
               <Button variant="ghost" size="icon">
@@ -53,10 +54,9 @@ export default function Footer() {
         </div>
         
         <div className="mt-12 pt-8 border-t border-gray-800 text-center text-gray-400">
-          <p>&copy; {new Date().getFullYear()} tradeX.ai. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} tradeX. All rights reserved.</p>
         </div>
       </div>
     </footer>
   )
 }
-
