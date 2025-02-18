@@ -28,7 +28,7 @@ export default function Hero() {
           </h1>
 
           <p className="text-gray-400 text-lg md:text-xl">
-            Transfer, swap, mint NFTs, and create SPL tokens seamlessly—just give prompts, and let AI Agent handle the on-chain interactions for you.
+            Create wallets, transfer, swap, mint NFTs, and create SPL tokens seamlessly—just give prompts, and let AI Agent handle the on-chain interactions for you.
           </p>
 
           <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
