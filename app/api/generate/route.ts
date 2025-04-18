@@ -167,7 +167,7 @@ const mintNFTFunctionDeclaration = {
         description: "The Solana address of the collection's master NFT.",
       },
     },
-    required: ["name", "description", "image", "collectionMint"],
+    required: ["name", "description", "collectionMint"],
   },
 };
 
@@ -272,7 +272,8 @@ function processResult(functionName: string, args: any): ActionResponse {
         if (args.symbol.length > 5) {
           throw new Error("Collection symbol must be 3-5 characters");
         }
-        return {
+        
+        const response = {
           interface: "createCollection",
           type: "createCollection",
           data: {
@@ -283,6 +284,21 @@ function processResult(functionName: string, args: any): ActionResponse {
             royaltyBasisPoints: args.royaltyBasisPoints,
             creators: args.creators,
           },
+        };
+        
+        console.log('create collection function hit', response);
+        //TODO: to remove return from here
+        return {
+          interface: "createCollection",
+          type: "createCollection",
+          data: {
+            name: args.name,
+            symbol: args.symbol,
+            description: args.description,
+            image: args.image,
+            royaltyBasisPoints: args.royaltyBasisPoints || undefined,
+            creators: args.creators || undefined
+          }
         };
     default:
         throw new Error(`Unknown function: ${functionName}`);
@@ -373,8 +389,8 @@ export const POST = async (req: Request): Promise<Response> => {
               text: `You are a Solana blockchain assistant that helps users with token operations. Please interpret user requests and execute the appropriate action:
 
           For COLLECTIONS:
-          - "create a collection named Art Collection with symbol ART"
-          - "create NFT collection Gaming Items with symbol GAME"
+          - "create a collection named Art Collection with symbol ART, imageUrl: "https://example.com/image.png", description: "A collection of digital art"
+          - "create NFT collection Gaming Items with symbol GAME, imageUrl: "https://example.com/gaming.png", description: "A collection of gaming items"
 
           For NFT MINTING:
           - "mint NFT named CryptoArt #1 in collection <collection-address>"
@@ -496,6 +512,7 @@ export const POST = async (req: Request): Promise<Response> => {
     console.error("Error occurred:", err);
     const errorMessage = err instanceof Error ? err.message : "Unknown error";
 
+    console.log("------------------ This is hitting -------------->");
     return new Response(
       JSON.stringify({
         error: "Internal server error",

@@ -288,6 +288,7 @@ export function ChatArea({ currentChat, setCurrentChat }: ChatAreaProps) {
         )}
       </div>
 
+       {/* TODO: Add a enter space for the input field  */}
       {/* Input Area */}
       <div className="p-4 border-t border-gray-800">
         <form 

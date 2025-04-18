@@ -1,3 +1,7 @@
+// TODO: To implicate these functionalities
+// Devnet chainId 103 
+// Mainnet chainId 101 
+// Testnet chainId 102 
 "use client";
 
 import { SolanaAgentKit } from "solana-agent-kit";
@@ -14,44 +18,7 @@ import { createContext, useContext } from "react";
 import { PublicKey } from "@solana/web3.js";
 import { TokenListProvider } from "@solana/spl-token-registry";
 import bs58 from 'bs58';
-
-interface SwapData {
-  from: string;
-  to: string;
-  amount: string;
-}
-
-interface TransferData {
-  recipient: string;
-  amount: string;
-  token: string;
-}
-interface pumpFunTokenData {
-  tokenName: string;
-  tokenTicker: string;
-  tokenDescription: string;
-  tokenImage: any;
-}
-interface NFTMintData {
-  name: string;
-  description: string;
-  image: any;
-  collectionMint: string;
-  symbol?: string;
-  attributes?: Array<{ trait_type: string; value: string }>;
-}
-interface CollectionData {
-  name: string;
-  symbol: string;
-  description: string;
-  image: string | File | Uint8Array;
-  royaltyBasisPoints?: number;
-  creators?: Array<{
-    address: string;
-    percentage: number;
-  }>;
-}
-
+import { SwapData, TransferData, pumpFunTokenData, NFTMintData, CollectionData } from "@/app/types/AgenticInterface";
 interface AgentContextProps {
   processSwap: (data: SwapData) => Promise<string>;
   processTransfer: (data: TransferData) => Promise<string>;
@@ -65,6 +32,7 @@ interface AgentContextProps {
 
 const AgentContext = createContext<AgentContextProps | null>(null);
 
+
 export const AgentProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -76,6 +44,12 @@ export const AgentProvider: React.FC<{ children: React.ReactNode }> = ({
     return <>{children}</>;
   }
 
+  /**
+   * This function for getting the minting details
+   * @param symbol 
+   * @param amount 
+   * @returns 
+   */
   // Get token mint details from wallet
   const getTokenMintDetails = (
     symbol: string,
@@ -112,11 +86,11 @@ export const AgentProvider: React.FC<{ children: React.ReactNode }> = ({
   async function findMintAddress(symbol: string) {
     const tokenListProvider = new TokenListProvider();
     const tokenList = await tokenListProvider.resolve();
-    console.log("tokenlist", tokenList);
+    // console.log("tokenlist", tokenList);
     const tokens = tokenList.filterByChainId(103).getList(); // Devnet chainId is 103
     const token = tokens.find((t) => t.symbol === symbol);
     return token ? token.address : null;
-  }
+  };
 
   //Initialize agent
   const agent = new SolanaAgentKit(
@@ -168,6 +142,7 @@ export const AgentProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  //TODO: to test this functionality 
   //swap transacion
   const processSwap = async (data: SwapData): Promise<string> => {
     if (!keyPair) {
@@ -177,10 +152,12 @@ export const AgentProvider: React.FC<{ children: React.ReactNode }> = ({
     const { from, to, amount } = data;
 
     // Handle SOL directly by providing the wrapped SOL mint address
+    //from 
     const fromMint =
       from === "SOL"
         ? { mint: "So11111111111111111111111111111111111111112", decimal: "9" }
         : getTokenMintDetails(from, amount);
+    // to 
     const toMint =
       to === "SOL"
         ? "So11111111111111111111111111111111111111112"
@@ -203,6 +180,9 @@ export const AgentProvider: React.FC<{ children: React.ReactNode }> = ({
       console.log("Amount in Smallest Units:", amountInSmallestUnits);
 
       // Perform the trade
+
+      // right now just testnet or devnet which has this chain id 102 
+      //when we make it in prod we do it in mainnet which has this chain id 101 
       const swapSignature = await trade(
         agent,
         new PublicKey(toMint),
@@ -284,6 +264,7 @@ export const AgentProvider: React.FC<{ children: React.ReactNode }> = ({
     
   };
 
+  //TODO: to test this functionality 
   const processNFTMint = async (
     data: NFTMintData
   ): Promise<{ mint: PublicKey; metadata: PublicKey }> => {
@@ -377,40 +358,85 @@ export const AgentProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  //TODO: to test this functionality 
   const processcreateCollection = async (
     data: CollectionData
   ): Promise<{ collectionAddress: PublicKey; signature: string }> => {
     if (!keyPair) {
       throw new Error("Keypair is not initialized.");
     }
-  
+    // console.log("data got in solana agent", data)
     try {
       // Handle image upload
       let imageFile: File;
+      // Use the actual content type from the response
       if (typeof data.image === "string") {
-        const imageResponse = await fetch(data.image);
-        const imageBlob = await imageResponse.blob();
-        imageFile = new File([imageBlob], "collection_image.png", { 
-          type: "image/png" 
-        });
+        try {
+          const imageResponse = await fetch(data.image);
+          
+          if (!imageResponse.ok) {
+            throw new Error(`Failed to fetch image: ${imageResponse.status} ${imageResponse.statusText}`);
+          }
+          
+          const contentType = imageResponse.headers.get('content-type');
+          const imageBlob = await imageResponse.blob();
+          
+          // Use the actual content type instead of hardcoding "image/png"
+          const fileExtension = contentType?.includes('jpeg') ? 'jpg' : 
+                                contentType?.includes('png') ? 'png' : 'img';
+                                
+          // Use a more unique filename to avoid conflicts
+          const filename = `collection_image_${Date.now()}.${fileExtension}`;
+          
+          imageFile = new File([imageBlob], filename, { 
+            type: contentType || "image/png" 
+          });
+        } catch (error) {
+          console.error("Error processing image URL:", error);
+          throw error;
+        }
       } else if (data.image instanceof File) {
         imageFile = data.image;
+        // console.log("Using provided File object:", imageFile.name, imageFile.type, imageFile.size);
       } else if (data.image instanceof Uint8Array) {
         imageFile = new File([data.image], "collection_image.png", {
           type: "image/png",
         });
+        // console.log("Created File from Uint8Array:", imageFile.size);
       } else {
+        console.error("Invalid image format:", typeof data.image);
         throw new Error("Invalid image format");
       }
   
-      // Upload image to IPFS
+      // Log before IPFS upload attempt
+      // console.log("Image file prepared for upload:", {
+      //   name: imageFile.name,
+      //   type: imageFile.type,
+      //   size: imageFile.size
+      // });
+      
+      // When creating the form data
       const imageFormData = new FormData();
       imageFormData.append("file", imageFile);
+      // console.log("Form data created with file");
+      
+      // Log the response headers and status
       const imageResponse = await fetch("/api/ipfs", {
         method: "POST",
         body: imageFormData,
       });
+      // console.log("IPFS API response status:", imageResponse.status);
+      // console.log("IPFS API response headers:", Object.fromEntries(imageResponse.headers.entries()));
+      
+      // Try to read the raw response if JSON parsing fails
+      if (!imageResponse.ok) {
+        const errorText = await imageResponse.text();
+        console.error("IPFS API error response:", errorText);
+        throw new Error(`IPFS upload failed: ${imageResponse.status} ${imageResponse.statusText}`);
+      }
+      
       const imageData = await imageResponse.json();
+      // console.log("IPFS API response data:", imageData);
   
       // Create collection metadata
       const metadata = {
@@ -424,7 +450,7 @@ export const AgentProvider: React.FC<{ children: React.ReactNode }> = ({
         },
       };
   
-      // Upload metadata to IPFS
+      //TODO: to debug this function 
       const metadataResponse = await fetch("/api/ipfs", {
         method: "POST",
         body: JSON.stringify(metadata),
@@ -437,21 +463,24 @@ export const AgentProvider: React.FC<{ children: React.ReactNode }> = ({
       // Deploy collection with metadata URI
       const result = await deploy_collection(agent, {
         name: data.name,
-        uri: metadataResult.uri, // Use metadata URI here
+        uri: metadataResult.uri,
         royaltyBasisPoints: data.royaltyBasisPoints || 500,
         creators: data.creators || [
           { address: keyPair.publicKey.toString(), percentage: 100 }
         ]
       });
-  
+      console.log("----->")
+      console.log("this is the result ---> ", result);
+      console.log("----->")
       return {
         collectionAddress: result.collectionAddress,
         signature: bs58.encode(result.signature)
-      };
+      }; 
     } catch (error: any) {
       console.error("Error in createCollection:", error);
       throw new Error(error.message || "Failed to create collection");
     }
+
   };
   
   return (
@@ -469,3 +498,4 @@ export const useSolanaAgent = () => {
     throw new Error("useSolanaAgent must be used within AgentProvider");
   return context;
 };
+
