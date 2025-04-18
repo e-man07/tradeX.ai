@@ -32,7 +32,6 @@ export async function POST(req: NextRequest) {
           { status: response.status }
         );
       }
-      
       const data = await response.json();
       return NextResponse.json(data);
     } else {
@@ -41,6 +40,7 @@ export async function POST(req: NextRequest) {
       const formData = await req.formData();
       let nativeFormData = new FormData();
       
+      //Looping through all the files and entries for uploading 
       for (const [key, value] of formData.entries()) {
         if (value && typeof value === 'object' && 'size' in value && 'type' in value && 'name' in value) {
           nativeFormData.append(key, value, value.name);
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       });
       
       if (!response.ok) {
-        let errorMessage = `IPFS Upload Failed: ${response.status} ${response.statusText}`;
+        let errorMessage = `IPFS Upload Failed "hey there!": ${response.status} ${response.statusText}`;
         let errorDetails = await response.text();
         
         return NextResponse.json(
